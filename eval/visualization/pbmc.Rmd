@@ -1,0 +1,495 @@
+```{r}
+
+library(ggplot2)
+library(gridExtra)
+library(RColorBrewer)
+library(ggsci)
+library(patchwork)
+library(tidyr)
+library(dplyr)
+library(ggsignif)
+
+mytemp<-theme(panel.background=element_rect(fill="white",colour=NA), panel.grid.major =element_blank(), panel.grid.minor = element_blank(),axis.line = element_line(colour = "black",size=0.5),axis.text.x = element_text(colour = "black"),axis.text.y =element_text(colour = "black"),
+              axis.title.y=element_text(colour = "black"))
+
+widetemp<-theme(panel.background=element_rect(fill="white",colour=NA), panel.grid.major =element_blank(), panel.grid.minor = element_blank(),axis.line = element_line(colour = "black",size=0.5),axis.text.x = element_text(angle = 30,size = 12,hjust = 1,colour = "black"),axis.text.y =element_text(size = 12,colour = "black"),
+                axis.title.y=element_text(size=12,colour = "black"),legend.text=element_text(size=12))
+
+rect_temp<-theme_bw()+theme(panel.background=element_rect(fill="white",colour=NA), panel.grid.minor = element_blank(), panel.grid.major =element_blank(),axis.text.y =element_text(colour = "black"), axis.title.y=element_text(colour = "black"))
+
+basecol<-function(n){
+  colall<-c('#d7191c','#31a354','#756bb1','#0571b0','#d95f0e','#bdbdbd')
+  return(colall[c(1:n)])
+}
+
+new_palette <- c( RColorBrewer::brewer.pal(5, "Set1"),'#bdbdbd',"#f781bf")
+
+mypal <- pal_d3(palette = "category20", alpha = 1)(14)
+
+contrast_pal =c('#0571b0','#d7191c',"#9ecae1","#fdbb84","#3182bd","#e34a33")
+
+
+```
+
+
+
+```{r}
+# 1. 先绘制tf recovery
+tf_peak_tf_recov <-read.csv("/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/tf_marker_tf_peak_res.csv",header=TRUE)
+tf_gene_tf_recov <-read.csv("/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/tf_marker_tf_gene_res.csv",header=TRUE)
+
+
+tf_peak_tf_recov$method <- plyr::mapvalues(tf_peak_tf_recov$method,from=c("scenic2_thres_scale2_samp","linger_thres_scale2_samp","LINGER_ctx","linger_thres_scale2_ctx"),to=c("CellGRN_SCENIC+","CellGRN_LINGER", "LINGER celltype","CellGRN_LINGER celltype"))
+
+tf_gene_tf_recov$method <- plyr::mapvalues(tf_gene_tf_recov$method,from=c("scenic2_thres_scale2_samp","linger_thres_scale2_samp","LINGER_ctx","linger_thres_scale2_ctx"),to=c("CellGRN_SCENIC+","CellGRN_LINGER", "LINGER celltype","CellGRN_LINGER celltype"))
+
+
+tf_peak_tf_recov2  = tf_peak_tf_recov[1:4,]
+tf_peak_tf_recov2$method = factor(tf_peak_tf_recov2$method,levels=c("SCENIC+" , "CellGRN_SCENIC+", "LINGER","CellGRN_LINGER"))
+
+p<-ggplot(tf_peak_tf_recov2,aes(x=method,y=Best_F1_avg,fill=method))+geom_col(alpha=1,width = 0.7)+rect_temp+xlab(NULL)+ylab("F1 score")+coord_flip()+scale_fill_manual(NULL,values=contrast_pal)
+
+ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/pbmc_tf_recov_tf_peak_sample.pdf",height = 4,width = 6)
+
+
+tf_gene_tf_recov2 = tf_gene_tf_recov[1:5,]
+tf_gene_tf_recov2$method = factor(tf_gene_tf_recov2$method,levels=c("Pearson","SCENIC+" , "CellGRN_SCENIC+", "LINGER","CellGRN_LINGER"))
+
+p<-ggplot(tf_gene_tf_recov2,aes(x=method,y=Best_F1_avg,fill=method))+geom_col(alpha=1,width = 0.7)+rect_temp+xlab(NULL)+ylab("F1 score")+coord_flip()+scale_fill_manual(NULL,values=c("#bdbdbd",contrast_pal[1:4]))
+ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/pbmc_tf_recov_tf_gene_sample.pdf",height = 4,width = 6)
+
+
+tmp1 = tf_peak_tf_recov[5:6,]
+tmp1$type = "TF-Peak"
+tmp2 = tf_gene_tf_recov[6:7,]
+tmp2$type = "TF-Gene"
+p_tab = rbind(tmp1,tmp2)
+
+p<-ggplot(p_tab,aes(x=type,y=Best_F1_avg,fill=method))+geom_col(alpha=1,width = 0.7,position="dodge")+rect_temp+xlab(NULL)+ylab("F1 score")+coord_flip()+scale_fill_manual(NULL,values=c(contrast_pal[3:4]))
+ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/pbmc_tf_recov_celltype.pdf",height = 4,width = 6)
+
+# cell type 结果
+tf_peak_tf_recov_ctx <-read.csv("/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/tf_marker_tf_peak_res_ctx.csv",header=TRUE)
+tf_gene_tf_recov_ctx <-read.csv("/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/tf_marker_tf_gene_res_ctx.csv",header=TRUE)
+
+tf_peak_tf_recov_ctx$method <- plyr::mapvalues(tf_peak_tf_recov_ctx$method,from=c("scenic2_thres_scale2_samp","linger_thres_scale2_samp","LINGER_ctx","linger_thres_scale2_ctx"),to=c("CellGRN_SCENIC+","CellGRN_LINGER", "LINGER","CellGRN_LINGER"))
+
+tf_gene_tf_recov_ctx$method <- plyr::mapvalues(tf_gene_tf_recov_ctx$method,from=c("scenic2_thres_scale2_samp","linger_thres_scale2_samp","LINGER_ctx","linger_thres_scale2_ctx"),to=c("CellGRN_SCENIC+","CellGRN_LINGER", "LINGER","CellGRN_LINGER"))
+
+tf_peak_tf_recov_ctx2 = tf_peak_tf_recov_ctx[c(1:24),]
+tf_peak_tf_recov_ctx2$method = factor(tf_peak_tf_recov_ctx2$method,levels=c("CellGRN_SCENIC+", "SCENIC+","CellGRN_LINGER" , "LINGER"))
+
+p<-ggplot(tf_peak_tf_recov_ctx2)+geom_boxplot(aes(x=method,y=Best_F1),width=0.6)+geom_jitter(aes(x=method,y=Best_F1,col=cell_type),width=0.2,height = 0,size=3,alpha=0.8)+scale_color_manual(NULL,values=basecol(6))+rect_temp+xlab(NULL)+ylab("F1 score")
+
+# p<-ggplot(tf_peak_tf_recov_ctx2,aes(x=method,y=Best_F1,fill=method))+geom_boxplot(width=0.6)+scale_fill_manual(NULL,values=c('#d7191c','#0571b0',"#fdbb84","#9ecae1"))+rect_temp+xlab(NULL)+ylab("F1 score")+theme(legend.position = "none") + 
+#   geom_signif(
+#     comparisons = list(
+#       c("CellGRN_SCENIC+", "SCENIC+"),   # 第1组 vs 第2组
+#       c("CellGRN_LINGER", "LINGER")     # 第3组 vs 第4组
+#     ),
+#     test = "t.test",         # 检验类型：t检验
+#     map_signif_level = TRUE, # 自动将p值转为星号（*: p<0.05; **: p<0.01; ***: p<0.001）
+#     y_position = c(0.21, 0.21), # 星号的垂直位置（根据你的图范围调整）
+#     tip_length = 0.01,       # 显著性横线的尖端长度
+#     textsize = 5             # 星号大小
+#   )
+# p
+
+ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/pbmc_tf_recov_tf_peak_scatter_sample.pdf",height = 4,width = 6)
+
+
+tf_gene_tf_recov_ctx2 = tf_gene_tf_recov_ctx[c(1:30),]
+tf_gene_tf_recov_ctx2$method = factor(tf_gene_tf_recov_ctx2$method,levels=c("CellGRN_LINGER","LINGER","CellGRN_SCENIC+","SCENIC+" ,  "Pearson"))
+
+p<-ggplot(tf_gene_tf_recov_ctx2)+geom_boxplot(aes(x=method,y=Best_F1),width=0.6)+geom_jitter(aes(x=method,y=Best_F1,col=cell_type),width=0.2,height = 0,size=3,alpha=0.8)+scale_color_manual(NULL,values=basecol(6))+rect_temp+xlab(NULL)+ylab("F1 score")
+ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/pbmc_tf_recov_tf_gene_scatter_sample.pdf",height = 4,width = 6)
+
+tmp1 = tf_peak_tf_recov_ctx[25:36,]
+tmp1$type = "TF-Peak"
+tmp2 = tf_gene_tf_recov_ctx[31:42,]
+tmp2$type = "TF-Gene"
+p_tab = rbind(tmp1,tmp2)
+
+p_tab$label = paste(p_tab$method,p_tab$type)
+p_tab$label = factor(p_tab$label,levels = rev(unique(p_tab$label)))
+p<-ggplot(p_tab)+geom_jitter(aes(x=label,y=Best_F1,col=cell_type),width=0.2,height = 0,size=3,alpha=0.8)+scale_color_manual(NULL,values=basecol(6))+rect_temp+xlab(NULL)+ylab("F1 score")+theme(axis.text.x = element_text(angle = 30,size = 12,hjust = 1,colour = "black"))
+ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/celltype/pbmc_tf_recov_scatter_celltype.pdf",height = 4.5,width = 6)
+
+```
+
+
+
+```{r}
+# 2. tf-gene结果。
+
+
+pbmc_knock_res <-read.csv("/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/pbmc_tf_knock_res.csv",header=TRUE)
+
+pbmc_knock_res$method = plyr::mapvalues(pbmc_knock_res$method,from=c("scenic2_thres_scale2_samp","linger_thres_scale2_samp","LINGER_ctx","linger_thres_scale2_ctx"),to=c("CellGRN_SCENIC+","CellGRN_LINGER", "LINGER celltype","CellGRN_LINGER celltype"))
+
+pbmc_knock_res$method = factor(pbmc_knock_res$method,levels=c("Pearson","SCENIC+" , "CellGRN_SCENIC+", "LINGER","CellGRN_LINGER"))
+p1<-ggplot(pbmc_knock_res,aes(x=method,y=PRAUC,fill=method))+geom_col(width=0.7)+coord_flip()+rect_temp+xlab(NULL)+ylab("PR-AUC")+scale_fill_manual(NULL,values=c("#bdbdbd",contrast_pal[1:4]))+theme(legend.position = "none")
+
+p2<-ggplot(pbmc_knock_res,aes(x=method,y=EPR,fill=method))+geom_col(width=0.7)+coord_flip()+rect_temp+xlab(NULL)+ylab("EPR")+scale_fill_manual(NULL,values=c("#bdbdbd",contrast_pal[1:4]))+theme(legend.position = "none")
+
+
+plot_comb<- grid.arrange(p1,p2, ncol=2, nrow=1)
+ggsave(plot_comb,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/pbmc_tf_knock_bar.pdf",width=6,height=3.5)
+
+# plot pr curve.
+pbmc_knock_pr<-read.csv("/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/pbmc_tf_knock_pr_curve.csv",header=TRUE)
+pbmc_knock_pr$method = plyr::mapvalues(pbmc_knock_pr$method,from=c("scenic2_thres_scale2_samp","linger_thres_scale2_samp","LINGER_ctx","linger_thres_scale2_ctx"),to=c("CellGRN_SCENIC+","CellGRN_LINGER", "LINGER celltype","CellGRN_LINGER celltype"))
+pbmc_knock_pr$method = factor(pbmc_knock_pr$method,levels=c("Pearson","SCENIC+" , "CellGRN_SCENIC+", "LINGER","CellGRN_LINGER"))
+p_tab = pbmc_knock_pr
+p_tab  = p_tab %>% arrange(recall, desc(prec)) # ggplot 相同x值可视化bug
+p<-ggplot(p_tab,aes(x=recall,y=prec,col=paste0(method,":",round(prauc,3))))+geom_line()+scale_color_manual(NULL,values=c("#fdbb84",'#d7191c',"#bdbdbd",'#0571b0'))+rect_temp+xlim(0,0.05)+xlab("Recall")+ylab("Precision")
+ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/pbmc_tf_knock_pr.pdf",height = 4,width = 6.5)
+```
+
+
+```{r}
+# 3. cd4 mpra enhancer discovery pr results.
+cd4_gene_peak_res = read.csv("/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/cd4_enhancer_gene_peak_pr_curve.csv",header=TRUE)
+cd4_tf_peak_res = read.csv("/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/cd4_enhancer_tf_peak_pr_curve.csv",header=TRUE)
+
+cd4_gene_peak_tab = read.csv("/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/cd4_enhancer_gene_peak_res.csv",header=TRUE)
+
+cd4_tf_peak_tab = read.csv("/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/cd4_enhancer_tf_peak_res.csv",header=TRUE)
+
+
+cd4_gene_peak_res$method = plyr::mapvalues(cd4_gene_peak_res$method,from=c("scenic2_thres_scale2_samp","linger_thres_scale2_samp","LINGER_ctx_CD4","linger_thres_scale2_ctx_CD4"),to=c("CellGRN_SCENIC+","CellGRN_LINGER", "LINGER CD4","CellGRN_LINGER CD4"))
+
+
+cd4_tf_peak_res$method = plyr::mapvalues(cd4_tf_peak_res$method,from=c("scenic2_thres_scale2_samp","linger_thres_scale2_samp","LINGER_ctx_CD4","linger_thres_scale2_ctx_CD4"),to=c("CellGRN_SCENIC+","CellGRN_LINGER", "LINGER CD4","CellGRN_LINGER CD4"))
+
+
+# cd4_gene_peak_res$method = factor(cd4_gene_peak_res$method,levels=c("LINGER CD4", "CellGRN_LINGER CD4","SCENIC+" , "CellGRN_SCENIC+", "LINGER","CellGRN_LINGER"))
+# cd4_tf_peak_res$method = factor(cd4_tf_peak_res$method,levels=c("LINGER CD4", "CellGRN_LINGER CD4","SCENIC+" , "CellGRN_SCENIC+", "LINGER","CellGRN_LINGER"))
+
+p_tab = subset(cd4_gene_peak_res,method!= "LINGER CD4" & method!= "CellGRN_LINGER CD4")
+
+p_tab  = p_tab %>% arrange(recall, desc(prec)) # ggplot 相同x值可视化bug
+p_tab$method = factor(p_tab$method,levels=c("SCENIC+" , "CellGRN_SCENIC+", "LINGER","CellGRN_LINGER"))
+
+p<-ggplot(p_tab,aes(x=recall,y=prec,col=paste0(method,":",round(prauc,3))))+geom_line()+scale_color_manual(NULL,values=c("#fdbb84",'#d7191c',"#9ecae1",'#0571b0'))+rect_temp+xlim(0,1) +xlab("Recall")+ylab("Precision")
+p
+
+
+ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/cd4_gene_peak_prauc_sample.pdf",height = 4,width = 6.5)
+
+
+
+p_tab = cd4_tf_peak_res
+p_tab = subset(p_tab,method!="SCENIC+" & method!= "LINGER CD4" & method!= "CellGRN_LINGER CD4")
+p_tab  = p_tab %>% arrange(recall, desc(prec)) 
+p_tab$method = factor(p_tab$method,levels=c("SCENIC+" , "CellGRN_SCENIC+", "LINGER","CellGRN_LINGER"))
+
+p<-ggplot(p_tab,aes(x=recall,y=prec,col=paste0(method,":",round(prauc,3))))+geom_line(linewidth=2)+scale_color_manual(NULL,values=c("#fdbb84",'#d7191c',"#9ecae1",'#0571b0'))+rect_temp+xlim(0,1) +xlab("Recall")+ylab("Precision")
+
+ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/cd4_tf_peak_prauc_sample.pdf",height = 4,width = 6.5)
+
+
+
+
+# 绘制三个指标的柱状图（窄）
+cd4_gene_peak_tab$method = plyr::mapvalues(cd4_gene_peak_tab$method,from=c("scenic2_thres_scale2_samp","linger_thres_scale2_samp","LINGER_ctx_CD4","linger_thres_scale2_ctx_CD4"),to=c("CellGRN_SCENIC+","CellGRN_LINGER", "LINGER CD4","CellGRN_LINGER CD4"))
+
+cd4_gene_peak_tab$method = factor(cd4_gene_peak_tab$method,levels=c("LINGER CD4", "CellGRN_LINGER CD4","SCENIC+" , "CellGRN_SCENIC+", "LINGER","CellGRN_LINGER"))
+
+p_tab = subset(cd4_gene_peak_tab,method!= "LINGER CD4" & method!= "CellGRN_LINGER CD4")
+
+p1<-ggplot(p_tab,aes(x=method,y=PRAUC,fill=method))+geom_col(width=0.7)+coord_flip()+rect_temp+xlab(NULL)+ylab("PR-AUC")+scale_fill_manual(NULL,values=contrast_pal)+theme(legend.position = "none")
+
+p2<-ggplot(p_tab,aes(x=method,y=EPR,fill=method))+geom_col(width=0.7)+coord_flip()+rect_temp+xlab(NULL)+ylab("EPR")+scale_fill_manual(NULL,values=contrast_pal)+theme(legend.position = "none")
+
+p3<-ggplot(p_tab,aes(x=method,y=F1,fill=method))+geom_col(width=0.7)+coord_flip()+rect_temp+xlab(NULL)+ylab("F1 score")+scale_fill_manual(NULL,values=contrast_pal)+theme(legend.position = "none")
+
+plot_comb<- grid.arrange(p1,p2,p3, ncol=3, nrow=1)
+
+ggsave(plot_comb,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/cd4_gene_peak_bar_sample.pdf",width=9,height=5)
+
+# SCENIC+ binary prediction n.a. for pr curve and pr-auc.
+
+cd4_tf_peak_tab$method = plyr::mapvalues(cd4_tf_peak_tab$method,from=c("scenic2_thres_scale2_samp","linger_thres_scale2_samp","LINGER_ctx_CD4","linger_thres_scale2_ctx_CD4"),to=c("CellGRN_SCENIC+","CellGRN_LINGER", "LINGER CD4","CellGRN_LINGER CD4"))
+cd4_tf_peak_tab$method = factor(cd4_tf_peak_tab$method,levels=c("LINGER CD4", "CellGRN_LINGER CD4","SCENIC+" , "CellGRN_SCENIC+", "LINGER","CellGRN_LINGER"))
+
+
+
+cd4_tf_peak_tab[1,2] = NA
+cd4_tf_peak_tab[1,3] = NA
+
+p_tab = subset(cd4_tf_peak_tab,method!= "LINGER CD4" & method!= "CellGRN_LINGER CD4")
+
+p1<-ggplot(p_tab,aes(x=method,y=PRAUC,fill=method))+geom_col(width=0.7)+coord_flip()+rect_temp+xlab(NULL)+ylab("PR-AUC")+scale_fill_manual(NULL,values=contrast_pal)+theme(legend.position = "none")
+
+p2<-ggplot(p_tab,aes(x=method,y=EPR,fill=method))+geom_col(width=0.7)+coord_flip()+rect_temp+xlab(NULL)+ylab("EPR")+scale_fill_manual(NULL,values=contrast_pal)+theme(legend.position = "none")
+
+p3<-ggplot(p_tab,aes(x=method,y=F1,fill=method))+geom_col(width=0.7)+coord_flip()+rect_temp+xlab(NULL)+ylab("F1 score")+scale_fill_manual(NULL,values=contrast_pal)+theme(legend.position = "none")
+
+plot_comb<- grid.arrange(p1,p2,p3, ncol=3, nrow=1)
+ggsave(plot_comb,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/cd4_tf_peak_bar_sample.pdf",width=9,height=5)
+
+
+# 然后是ctx pred 的结果
+# 先pr曲线，然后是性能bar plot
+tmp1 = subset(cd4_tf_peak_res,method== "LINGER CD4" | method== "CellGRN_LINGER CD4")
+tmp1$type = "TF-Peak"
+tmp2 = subset(cd4_gene_peak_res,method== "LINGER CD4" | method== "CellGRN_LINGER CD4")
+tmp2$type = "Peak-Gene"
+
+# 分2个图
+
+p<-ggplot(tmp1,aes(x=recall,y=prec,col=paste0(method,":",round(prauc,3))))+geom_line()+scale_color_manual(NULL,values=c("#fdbb84","#9ecae1"))+rect_temp+xlim(0,1) +xlab("Recall")+ylab("Precision")
+ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/celltype/cd4_tf_peak_prauc_celltype.pdf",height = 4,width = 7)
+
+p<-ggplot(tmp2,aes(x=recall,y=prec,col=paste0(method,":",round(prauc,3))))+geom_line()+scale_color_manual(NULL,values=c("#fdbb84","#9ecae1"))+rect_temp+xlim(0,1) +xlab("Recall")+ylab("Precision")
+ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/celltype/cd4_gene_peak_prauc_celltype.pdf",height = 4,width = 7)
+
+# 然后绘制barplot.
+tmp1 = cd4_tf_peak_tab[5:6,]
+tmp1$type = "TF-Peak"
+tmp2 = cd4_gene_peak_tab[5:6,]
+tmp2$type = "Peak-Gene"
+p_tab = rbind(tmp1,tmp2)
+
+p_tab$label = paste(p_tab$method,p_tab$type)
+p_tab$label = factor(p_tab$label,levels = unique(p_tab$label))
+
+p1<-ggplot(p_tab,aes(x=label,y=PRAUC,fill=method))+geom_col(width=0.7)+coord_flip()+rect_temp+xlab(NULL)+ylab("PR-AUC")+scale_fill_manual(NULL,values=c("#9ecae1","#fdbb84"))+theme(legend.position = "none")
+
+p2<-ggplot(p_tab,aes(x=label,y=EPR,fill=method))+geom_col(width=0.7)+coord_flip()+rect_temp+xlab(NULL)+ylab("EPR")+scale_fill_manual(NULL,values=c("#9ecae1","#fdbb84"))+theme(legend.position = "none")
+
+p3<-ggplot(p_tab,aes(x=label,y=F1,fill=method))+geom_col(width=0.7)+coord_flip()+rect_temp+xlab(NULL)+ylab("F1 score")+scale_fill_manual(NULL,values=c("#9ecae1","#fdbb84"))+theme(legend.position = "none")
+
+plot_comb<- grid.arrange(p1,p2,p3, ncol=3, nrow=1)
+ggsave(plot_comb,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/celltype/cd4_enhancer_bar_celltype.pdf",width=9,height=3)
+
+```
+
+
+
+```{r}
+# 4. pbmc gene-peak validation.
+# 4.1 pbmc cell type specific hi-c validation
+pbmc_hic_gene_peak_res = read.csv("/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/pbmc_ctx_hic_pr_curve.csv",header=TRUE)
+
+pbmc_hic_gene_peak_tab = read.csv("/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/pbmc_ctx_hic_res.csv",header=TRUE)
+
+pbmc_hic_gene_peak_res$method = plyr::mapvalues(pbmc_hic_gene_peak_res$method,from=c("scenic2_thres_scale2_samp","linger_thres_scale2_samp","LINGER_ctx","linger_thres_scale2_ctx"),to=c("CellGRN_SCENIC+","CellGRN_LINGER", "LINGER celltype","CellGRN_LINGER celltype"))
+pbmc_hic_gene_peak_res$method = factor(pbmc_hic_gene_peak_res$method,levels=c("CellGRN_LINGER","LINGER","CellGRN_SCENIC+","SCENIC+","CellGRN_LINGER celltype","LINGER celltype"))
+
+
+
+
+pbmc_hic_gene_peak_res2 = subset(pbmc_hic_gene_peak_res,method!= "LINGER celltype" & method!= "CellGRN_LINGER celltype")
+pbmc_hic_gene_peak_res2$method = factor(pbmc_hic_gene_peak_res2$method,levels=c("SCENIC+" , "CellGRN_SCENIC+", "LINGER","CellGRN_LINGER"))
+
+ctxs = unique(pbmc_hic_gene_peak_res2$celltype)
+for (ctx in ctxs){
+  p_tab = subset(pbmc_hic_gene_peak_res2, celltype==ctx)
+  p_tab  = p_tab %>% arrange(recall, desc(prec))
+  p<-ggplot(p_tab,aes(x=recall,y=prec,col=paste0(method,":",round(prauc,3))))+geom_line()+scale_color_manual(NULL,values=c("#fdbb84",'#d7191c',"#9ecae1",'#0571b0'))+rect_temp+xlim(0,0.1) +xlab("Recall")+ylab("Precision")
+  outfname = paste0("/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/pbmc_ctx_",ctx,"_hic_pr_sample.pdf")
+  ggsave(p,filename=outfname,height = 4,width = 6.5)
+}
+
+# 绘制barplot
+pbmc_hic_gene_peak_tab$method = plyr::mapvalues(pbmc_hic_gene_peak_tab$method,from=c("scenic2_thres_scale2_samp","linger_thres_scale2_samp","LINGER_ctx","linger_thres_scale2_ctx"),to=c("CellGRN_SCENIC+","CellGRN_LINGER", "LINGER celltype","CellGRN_LINGER celltype"))
+# pbmc_hic_gene_peak_tab$method = factor(pbmc_hic_gene_peak_tab$method,levels=c("LINGER celltype", "CellGRN_LINGER celltype","SCENIC+" , "CellGRN_SCENIC+", "LINGER","CellGRN_LINGER"))
+pbmc_hic_gene_peak_tab2 = subset(pbmc_hic_gene_peak_tab,method!= "LINGER celltype" & method!= "CellGRN_LINGER celltype")
+pbmc_hic_gene_peak_tab2$method = factor(pbmc_hic_gene_peak_tab2$method,levels=c("CellGRN_SCENIC+","SCENIC+","CellGRN_LINGER" ,  "LINGER"))
+# for (ctx in ctxs){
+#   p_tab = subset(pbmc_hic_gene_peak_tab2, celltype==ctx)
+#   # p_tab  = p_tab %>% arrange(recall, desc(prec)) 
+#   
+#   p1<-ggplot(p_tab,aes(x=method,y=PRAUC,fill=method))+geom_col(width=0.7)+coord_flip()+rect_temp+xlab(NULL)+ylab("PR-AUC")+scale_fill_manual(NULL,values=contrast_pal)+theme(legend.position = "none")
+# 
+#   p2<-ggplot(p_tab,aes(x=method,y=EPR,fill=method))+geom_col(width=0.7)+coord_flip()+rect_temp+xlab(NULL)+ylab("EPR")+scale_fill_manual(NULL,values=contrast_pal)+theme(legend.position = "none")
+#   
+#   # p3<-ggplot(p_tab,aes(x=method,y=F1))+geom_col(fill=mypal[3])+coord_flip()+rect_temp+xlab(NULL)+ylab("F1-score") # F1 bias.
+#   plot_comb<- grid.arrange(p1,p2, ncol=2, nrow=1)
+# 
+#   outfname = paste0("/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/pbmc_ctx_",ctx,"_hic_bar_sample.pdf")
+#   ggsave(plot_comb,filename=outfname,height = 4,width = 6)
+# }
+
+# 对PRAUC和EPR绘制boxplot.
+p<-ggplot(pbmc_hic_gene_peak_tab2,aes(x=method,y=PRAUC,col=celltype))+geom_jitter(width=0.2,height=0)+scale_color_manual(NULL,values=basecol(4))+rect_temp+xlab(NULL)+ylab("PR-AUC")
+ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/pbmc_hic_prauc_sample_summary.pdf",height=4,width=5.5)
+
+p<-ggplot(pbmc_hic_gene_peak_tab2,aes(x=method,y=EPR,col=celltype))+geom_jitter(width=0.2,height=0)+scale_color_manual(NULL,values=basecol(4))+rect_temp+xlab(NULL)+ylab("EPR")
+ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/pbmc_hic_epr_sample_summary.pdf",height=4,width=5.5)
+
+# 分别绘制cell type结果
+pbmc_hic_gene_peak_res3 = subset(pbmc_hic_gene_peak_res,method== "LINGER celltype" | method== "CellGRN_LINGER celltype")
+ctxs = unique(pbmc_hic_gene_peak_res3$celltype)
+for (ctx in ctxs){
+  p_tab = subset(pbmc_hic_gene_peak_res3, celltype==ctx)
+  p_tab  = p_tab %>% arrange(recall, desc(prec))
+  p<-ggplot(p_tab,aes(x=recall,y=prec,col=paste0(method,":",round(prauc,3))))+geom_line()+scale_color_manual(NULL,values=c("#fdbb84","#9ecae1"))+rect_temp+xlim(0,0.1) +xlab("Recall")+ylab("Precision")
+  outfname = paste0("/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/celltype/pbmc_ctx_",ctx,"_hic_pr_celltype.pdf")
+  ggsave(p,filename=outfname,height = 4,width = 6.5)
+}
+
+# 以及barplot
+pbmc_hic_gene_peak_tab3 = subset(pbmc_hic_gene_peak_tab,method== "LINGER celltype" | method== "CellGRN_LINGER celltype")
+ctxs = unique(pbmc_hic_gene_peak_tab3$celltype)
+# for (ctx in ctxs){
+#   p_tab = subset(pbmc_hic_gene_peak_tab3, celltype==ctx)
+#   # p_tab  = p_tab %>% arrange(recall, desc(prec)) 
+#   
+#   p1<-ggplot(p_tab,aes(x=method,y=PRAUC,fill=method))+geom_col(width=0.7)+coord_flip()+rect_temp+xlab(NULL)+ylab("PR-AUC")+scale_fill_manual(NULL,values=c("#fdbb84","#9ecae1"))+theme(legend.position = "none")
+# 
+#   p2<-ggplot(p_tab,aes(x=method,y=EPR,fill=method))+geom_col(width=0.7)+coord_flip()+rect_temp+xlab(NULL)+ylab("EPR")+scale_fill_manual(NULL,values=c("#fdbb84","#9ecae1"))+theme(legend.position = "none")
+#   
+#   # p3<-ggplot(p_tab,aes(x=method,y=F1))+geom_col(fill=mypal[3])+coord_flip()+rect_temp+xlab(NULL)+ylab("F1-score")
+#   plot_comb<- grid.arrange(p1,p2, ncol=2, nrow=1)
+# 
+#   outfname = paste0("/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/celltype/pbmc_ctx_",ctx,"_hic_bar_celltype.pdf")
+#   ggsave(plot_comb,filename=outfname,height = 3,width = 6)
+# }
+
+p<-ggplot(pbmc_hic_gene_peak_tab3,aes(x=method,y=PRAUC,col=celltype))+geom_jitter(width=0.2,height=0)+scale_color_manual(NULL,values=basecol(4))+rect_temp+xlab(NULL)+ylab("PR-AUC")
+ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/celltype/pbmc_hic_prauc_celltype_summary.pdf",height=4,width=4.5)
+
+p<-ggplot(pbmc_hic_gene_peak_tab3,aes(x=method,y=EPR,col=celltype))+geom_jitter(width=0.2,height=0)+scale_color_manual(NULL,values=basecol(4))+rect_temp+xlab(NULL)+ylab("EPR")
+ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/celltype/pbmc_hic_epr_celltype_summary.pdf",height=4,width=4.5)
+
+# 4.2 eQTL analysis
+pbmc_eqtl_gene_peak_res = read.csv("/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/pbmc_ctx_eQTL_pr_curve.csv",header=TRUE)
+
+pbmc_eqtl_gene_peak_tab = read.csv("/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/pbmc_ctx_eQTL_res.csv",header=TRUE)
+
+pbmc_eqtl_gene_peak_res$method = plyr::mapvalues(pbmc_eqtl_gene_peak_res$method,from=c("scenic2_thres_scale2_samp","linger_thres_scale2_samp","LINGER_ctx","linger_thres_scale2_ctx"),to=c("CellGRN_SCENIC+","CellGRN_LINGER", "LINGER celltype","CellGRN_LINGER celltype"))
+pbmc_eqtl_gene_peak_res$method = factor(pbmc_eqtl_gene_peak_res$method,levels=c("CellGRN_LINGER","LINGER","CellGRN_SCENIC+","SCENIC+","CellGRN_LINGER celltype","LINGER celltype"))
+
+
+
+pbmc_eqtl_gene_peak_res2 = subset(pbmc_eqtl_gene_peak_res,method!= "LINGER celltype" & method!= "CellGRN_LINGER celltype")
+# pbmc_eqtl_gene_peak_res2$method = factor(pbmc_eqtl_gene_peak_res2$method,levels=c("SCENIC+" , "CellGRN_SCENIC+", "LINGER","CellGRN_LINGER"))
+
+ctxs = unique(pbmc_eqtl_gene_peak_res2$celltype)
+for (ctx in ctxs){
+  p_tab = subset(pbmc_eqtl_gene_peak_res2, celltype==ctx)
+  p_tab  = p_tab %>% arrange(recall, desc(prec))
+  p<-ggplot(p_tab,aes(x=recall,y=prec,col=paste0(method,":",round(prauc,4))))+geom_line()+scale_color_manual(NULL,values=c("#fdbb84",'#d7191c',"#9ecae1",'#0571b0'))+rect_temp+xlim(0,0.05) +xlab("Recall")+ylab("Precision")
+  outfname = paste0("/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/pbmc_ctx_",ctx,"_eqtl_pr_sample.pdf")
+  ggsave(p,filename=outfname,height = 4,width = 6.5)
+}
+
+
+# 绘制barplot
+pbmc_eqtl_gene_peak_tab$method = plyr::mapvalues(pbmc_eqtl_gene_peak_tab$method,from=c("scenic2_thres_scale2_samp","linger_thres_scale2_samp","LINGER_ctx","linger_thres_scale2_ctx"),to=c("CellGRN_SCENIC+","CellGRN_LINGER", "LINGER celltype","CellGRN_LINGER celltype"))
+# pbmc_eqtl_gene_peak_tab$method = factor(pbmc_eqtl_gene_peak_tab$method,levels=c("LINGER celltype", "CellGRN_LINGER celltype","SCENIC+" , "CellGRN_SCENIC+", "LINGER","CellGRN_LINGER"))
+
+
+pbmc_eqtl_gene_peak_tab2 = subset(pbmc_eqtl_gene_peak_tab,method!= "LINGER celltype" & method!= "CellGRN_LINGER celltype")
+pbmc_eqtl_gene_peak_tab2$method = factor(pbmc_eqtl_gene_peak_tab2$method,levels=c("CellGRN_SCENIC+","SCENIC+","CellGRN_LINGER" ,  "LINGER"))
+# for (ctx in ctxs){
+#   p_tab = subset(pbmc_eqtl_gene_peak_tab2, celltype==ctx)
+#   # p_tab  = p_tab %>% arrange(recall, desc(prec)) 
+#   
+#   p1<-ggplot(p_tab,aes(x=method,y=PRAUC,fill=method))+geom_col(width=0.7)+coord_flip()+rect_temp+xlab(NULL)+ylab("PR-AUC")+scale_fill_manual(NULL,values=contrast_pal)+theme(legend.position = "none")
+# 
+#   p2<-ggplot(p_tab,aes(x=method,y=EPR,fill=method))+geom_col(width=0.7)+coord_flip()+rect_temp+xlab(NULL)+ylab("EPR")+scale_fill_manual(NULL,values=contrast_pal)+theme(legend.position = "none")
+#   
+#   # p3<-ggplot(p_tab,aes(x=method,y=F1))+geom_col(fill=mypal[3])+coord_flip()+rect_temp+xlab(NULL)+ylab("F1-score")
+#   plot_comb<- grid.arrange(p1,p2, ncol=2, nrow=1)
+# 
+#   outfname = paste0("/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/pbmc_ctx_",ctx,"_eqtl_bar_sample.pdf")
+#   ggsave(plot_comb,filename=outfname,height = 4,width = 6)
+# }
+p<-ggplot(pbmc_eqtl_gene_peak_tab2,aes(x=method,y=PRAUC,col=celltype))+geom_jitter(width=0.2,height=0)+scale_color_manual(NULL,values=basecol(5))+rect_temp+xlab(NULL)+ylab("PR-AUC")
+ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/pbmc_eqtl_prauc_sample_summary.pdf",height=4,width=5.5)
+
+p<-ggplot(pbmc_eqtl_gene_peak_tab2,aes(x=method,y=EPR,col=celltype))+geom_jitter(width=0.2,height=0)+scale_color_manual(NULL,values=basecol(5))+rect_temp+xlab(NULL)+ylab("EPR")
+ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/pbmc_eqtl_epr_sample_summary.pdf",height=4,width=5.5)
+
+
+# 分别绘制cell type结果
+pbmc_eqtl_gene_peak_res3 = subset(pbmc_eqtl_gene_peak_res,method== "LINGER celltype" | method== "CellGRN_LINGER celltype")
+ctxs = unique(pbmc_eqtl_gene_peak_res3$celltype)
+for (ctx in ctxs){
+  p_tab = subset(pbmc_eqtl_gene_peak_res3, celltype==ctx)
+  p_tab  = p_tab %>% arrange(recall, desc(prec))
+  p<-ggplot(p_tab,aes(x=recall,y=prec,col=method))+geom_line()+scale_color_manual(NULL,values=c("#fdbb84","#9ecae1"))+rect_temp+xlim(0,0.05) +xlab("Recall")+ylab("Precision")
+  outfname = paste0("/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/celltype/pbmc_ctx_",ctx,"_eqtl_pr_celltype.pdf")
+  ggsave(p,filename=outfname,height = 4,width = 6)
+}
+
+# 以及barplot
+pbmc_eqtl_gene_peak_tab3 = subset(pbmc_eqtl_gene_peak_tab,method== "LINGER celltype" | method== "CellGRN_LINGER celltype")
+ctxs = unique(pbmc_eqtl_gene_peak_tab3$celltype)
+# for (ctx in ctxs){
+#   p_tab = subset(pbmc_eqtl_gene_peak_tab3, celltype==ctx)
+#   # p_tab  = p_tab %>% arrange(recall, desc(prec)) 
+#   
+#   p1<-ggplot(p_tab,aes(x=method,y=PRAUC,fill=method))+geom_col(width=0.7)+coord_flip()+rect_temp+xlab(NULL)+ylab("PR-AUC")+scale_fill_manual(NULL,values=c("#fdbb84","#9ecae1"))+theme(legend.position = "none")
+# 
+#   p2<-ggplot(p_tab,aes(x=method,y=EPR,fill=method))+geom_col(width=0.7)+coord_flip()+rect_temp+xlab(NULL)+ylab("EPR")+scale_fill_manual(NULL,values=c("#fdbb84","#9ecae1"))+theme(legend.position = "none")
+#   
+#   # p3<-ggplot(p_tab,aes(x=method,y=F1))+geom_col(fill=mypal[3])+coord_flip()+rect_temp+xlab(NULL)+ylab("F1-score")
+#   plot_comb<- grid.arrange(p1,p2, ncol=2, nrow=1)
+# 
+#   outfname = paste0("/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/celltype/pbmc_ctx_",ctx,"_eqtl_bar_celltype.pdf")
+#   ggsave(plot_comb,filename=outfname,height = 3,width = 6)
+# }
+
+p<-ggplot(pbmc_eqtl_gene_peak_tab3,aes(x=method,y=PRAUC,col=celltype))+geom_jitter(width=0.2,height=0)+scale_color_manual(NULL,values=basecol(5))+rect_temp+xlab(NULL)+ylab("PR-AUC")
+ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/celltype/pbmc_eqtl_prauc_celltype_summary.pdf",height=4,width=4.5)
+
+p<-ggplot(pbmc_eqtl_gene_peak_tab3,aes(x=method,y=EPR,col=celltype))+geom_jitter(width=0.2,height=0)+scale_color_manual(NULL,values=basecol(5))+rect_temp+xlab(NULL)+ylab("EPR")
+ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/celltype/pbmc_eqtl_epr_celltype_summary.pdf",height=4,width=4.5)
+
+# 4.3 绘制hic按距离分
+
+pbmc_hic_range_res = read.csv("/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/pbmc_ctx_hic_range_res.csv",header=TRUE)
+colnames(pbmc_hic_range_res)[1:2] = c("PRAUC","EPR")
+
+
+pbmc_hic_range_res$method = plyr::mapvalues(pbmc_hic_range_res$method,from=c("scenic2_thres_scale2_samp","linger_thres_scale2_samp","LINGER_ctx","linger_thres_scale2_ctx"),to=c("CellGRN_SCENIC+","CellGRN_LINGER", "LINGER celltype","CellGRN_LINGER celltype"))
+# pbmc_hic_range_res$method = factor(pbmc_hic_range_res$method,levels=c("LINGER celltype", "CellGRN_LINGER celltype","SCENIC+" , "CellGRN_SCENIC+", "LINGER","CellGRN_LINGER"))
+
+pbmc_hic_range_res2 = subset(pbmc_hic_range_res,method!= "LINGER celltype" & method!= "CellGRN_LINGER celltype")
+pbmc_hic_range_res2$method = factor(pbmc_hic_range_res2$method,levels=c("CellGRN_SCENIC+","SCENIC+","CellGRN_LINGER" ,  "LINGER"))
+
+pbmc_hic_range_res2$range= factor(pbmc_hic_range_res2$range,levels = unique(pbmc_hic_range_res2$range))
+ctxs = unique(pbmc_hic_range_res2$celltype)
+for (ctx in ctxs){
+  p_tab = subset(pbmc_hic_range_res2, celltype==ctx)
+  # p_tab  = p_tab %>% arrange(recall, desc(prec)) 
+  
+  p1<-ggplot(p_tab,aes(x=range,y=PRAUC,fill=method,group=method))+geom_col(position = "dodge",width=0.7)+rect_temp+xlab(NULL)+ylab("PR-AUC")+scale_fill_manual(NULL,values=c('#d7191c','#0571b0',"#fdbb84","#9ecae1"))
+  
+  p2<-ggplot(p_tab,aes(x=range,y=EPR,fill=method,group=method))+geom_col(position = "dodge",width=0.7)+rect_temp+xlab(NULL)+ylab("EPR")+scale_fill_manual(NULL,values=c('#d7191c','#0571b0',"#fdbb84","#9ecae1"))
+
+  # p3<-ggplot(p_tab,aes(x=method,y=F1))+geom_col(fill=mypal[3])+coord_flip()+rect_temp+xlab(NULL)+ylab("F1-score")
+  plot_comb<- grid.arrange(p1,p2, ncol=1, nrow=2)
+
+  outfname = paste0("/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/pbmc_ctx_",ctx,"_hic_range_res_bar_sample.pdf")
+  ggsave(plot_comb,filename=outfname,height = 7,width = 8)
+}
+
+# cell type 后续再修改。
+
+pbmc_hic_range_res3 = subset(pbmc_hic_range_res,method== "LINGER celltype" | method== "CellGRN_LINGER celltype")
+# pbmc_hic_range_res3$method = factor(pbmc_hic_range_res3$method,levels=c("SCENIC+" , "CellGRN_SCENIC+", "LINGER","CellGRN_LINGER"))
+
+pbmc_hic_range_res3$range= factor(pbmc_hic_range_res3$range,levels = unique(pbmc_hic_range_res2$range))
+ctxs = unique(pbmc_hic_range_res3$celltype)
+for (ctx in ctxs){
+  p_tab = subset(pbmc_hic_range_res3, celltype==ctx)
+  # p_tab  = p_tab %>% arrange(recall, desc(prec)) 
+  
+  p1<-ggplot(p_tab,aes(x=range,y=PRAUC,fill=method,group=method))+geom_col(position = "dodge",width=0.7)+rect_temp+xlab(NULL)+ylab("PR-AUC")+scale_fill_manual(NULL,values=c("#fdbb84","#9ecae1"))
+  
+  p2<-ggplot(p_tab,aes(x=range,y=EPR,fill=method,group=method))+geom_col(position = "dodge",width=0.7)+rect_temp+xlab(NULL)+ylab("EPR")+scale_fill_manual(NULL,values=c("#fdbb84","#9ecae1"))
+
+  # p3<-ggplot(p_tab,aes(x=method,y=F1))+geom_col(fill=mypal[3])+coord_flip()+rect_temp+xlab(NULL)+ylab("F1-score")
+  plot_comb<- grid.arrange(p1,p2, ncol=1, nrow=2)
+
+  outfname = paste0("/home/shaliu_fu/multireg/cellGRN/eval/results/pbmc/celltype/pbmc_ctx_",ctx,"_hic_range_res_bar_celltype.pdf")
+  ggsave(plot_comb,filename=outfname,height = 7,width = 8)
+}
+```
+

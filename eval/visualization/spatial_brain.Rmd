@@ -1,0 +1,195 @@
+```{r}
+
+library(ggplot2)
+library(gridExtra)
+library(RColorBrewer)
+library(ggsci)
+library(patchwork)
+library(tidyr)
+library(dplyr)
+  
+
+mytemp<-theme(panel.background=element_rect(fill="white",colour=NA), panel.grid.major =element_blank(), panel.grid.minor = element_blank(),axis.line = element_line(colour = "black",size=0.5),axis.text.x = element_text(colour = "black"),axis.text.y =element_text(colour = "black"),
+              axis.title.y=element_text(colour = "black"))
+
+widetemp<-theme(panel.background=element_rect(fill="white",colour=NA), panel.grid.major =element_blank(), panel.grid.minor = element_blank(),axis.line = element_line(colour = "black",size=0.5),axis.text.x = element_text(angle = 30,size = 12,hjust = 1,colour = "black"),axis.text.y =element_text(size = 12,colour = "black"),
+                axis.title.y=element_text(size=12,colour = "black"),legend.text=element_text(size=12))
+
+rect_temp<-theme_bw()+theme(panel.background=element_rect(fill="white",colour=NA), panel.grid.minor = element_blank(), panel.grid.major =element_blank(),axis.text.y =element_text(colour = "black"), axis.title.y=element_text(colour = "black"))
+
+basecol<-function(n){
+  colall<-c('#d7191c','#31a354','#756bb1','#0571b0','#d95f0e','#bdbdbd')
+  return(colall[c(1:n)])
+}
+
+new_palette <- c( RColorBrewer::brewer.pal(5, "Set1"),'#bdbdbd',"#f781bf")
+
+mypal <- pal_d3(palette = "category20", alpha = 1)(14)
+```
+
+
+```{r}
+library(Seurat)
+spatial_data=readRDS("/home/shaliu_fu/multireg/cellGRN/data/spatial_brain/cortex_pseudotime_combined.rds")
+
+tf_exp = read.table("/home/shaliu_fu/multireg/cellGRN/eval/results/spatial_brain/sel_tf_expr.csv",sep=',',row.names=1,header=TRUE)
+tf_regulon = read.table("/home/shaliu_fu/multireg/cellGRN/eval/results/spatial_brain/spatial_brain_tf_gene_activity.csv",sep=',',row.names=1,header=TRUE)
+tf_binding = read.table("/home/shaliu_fu/multireg/cellGRN/eval/results/spatial_brain/spatial_brain_tf_peak_activity.csv",sep=',',row.names=1,header=TRUE)
+
+cell_meta = read.table("/home/shaliu_fu/multireg/cellGRN/data/spatial_brain/metadata.csv",,header=TRUE,sep=",")
+
+rownames(cell_meta) =cell_meta[,'barcode']
+
+cell_meta['Pax6_exp'] = log2(tf_exp[,1]+1)
+cell_meta['Pax6_regulon'] = sqrt(tf_regulon[,1])
+
+# 绘制scRNA umap结果。
+# p<-ggplot(spatial_data@meta.data)
+rna_umap = as.data.frame(spatial_data@reductions$UMAP@cell.embeddings)
+cell_meta<-cbind(cell_meta,rna_umap)
+
+p<-ggplot(cell_meta, aes(x=UMAP_1,y=UMAP_2,col=Sample)) +geom_point()+scale_color_manual(NULL,values = basecol(4))+rect_temp
+ggsave(p,filename = "/home/shaliu_fu/multireg/cellGRN/eval/results/spatial_brain/cell_umap.pdf",width=6,height=4)
+
+p<-ggplot(cell_meta, aes(x=UMAP_1,y=UMAP_2,col=Pax6_exp)) +geom_point()+scale_color_viridis_c(NULL)+rect_temp
+ggsave(p,filename = "/home/shaliu_fu/multireg/cellGRN/eval/results/spatial_brain/cell_umap_pax6_exp.pdf",width=6,height=4)
+
+
+p<-ggplot(cell_meta, aes(x=UMAP_1,y=UMAP_2,col=Pax6_regulon)) +geom_point()+scale_color_viridis_c(NULL)+rect_temp
+ggsave(p,filename = "/home/shaliu_fu/multireg/cellGRN/eval/results/spatial_brain/cell_umap_pax6_regulon.pdf",width=6,height=4)
+
+# 绘制空转结果。
+p<-ggplot(cell_meta, aes(x = array_col, y = array_row, color = Sample)) +
+  geom_point(size = 1.5) +           # 点的大小
+  scale_color_manual(values = basecol(6)) +
+  theme_void() +                     # 去掉背景网格
+  coord_fixed() +                    # 保证 X 和 Y 轴比例一致，防止图形拉伸
+  scale_y_reverse() #+                # 【关键】通常空间坐标的Y轴是反的（原点在左上角），如果图是倒的，加上这一行
+  # labs(title = "Sample annotation")
+ggsave(p,filename = "/home/shaliu_fu/multireg/cellGRN/eval/results/spatial_brain/spatial_celltype.pdf",width = 5,height = 4)
+
+p=ggplot(cell_meta, aes(x = array_col, y = array_row, color = Pax6_exp)) +
+  geom_point(size = 1.5) +           # 点的大小
+  scale_color_viridis_c(NULL) +          # 使用好看的渐变色
+  theme_void() +                     # 去掉背景网格
+  coord_fixed() +                    # 保证 X 和 Y 轴比例一致，防止图形拉伸
+  scale_y_reverse() +                # 【关键】通常空间坐标的Y轴是反的（原点在左上角），如果图是倒的，加上这一行
+  labs(title = "Pax6 expression")
+ggsave(p,filename = "/home/shaliu_fu/multireg/cellGRN/eval/results/spatial_brain/spatial_pax6_exp.pdf",width = 5,height = 4)
+
+p=ggplot(cell_meta, aes(x = array_col, y = array_row, color =Pax6_regulon)) +
+  geom_point(size = 1.5) +           # 点的大小
+  scale_color_viridis_c(NULL) +          # 使用好看的渐变色
+  theme_void() +                     # 去掉背景网格
+  coord_fixed() +                    # 保证 X 和 Y 轴比例一致，防止图形拉伸
+  scale_y_reverse() +                # 【关键】通常空间坐标的Y轴是反的（原点在左上角），如果图是倒的，加上这一行
+  labs(title = "Pax6 regulon")
+ggsave(p,filename = "/home/shaliu_fu/multireg/cellGRN/eval/results/spatial_brain/spatial_pax6_regulon.pdf",width = 5,height = 4)
+
+# 绘制几个发育阶段的boxplot.
+p<-ggplot(cell_meta,aes(x=Sample,y=Pax6_exp,col=Sample))+geom_boxplot(width=0.6)+scale_color_manual(NULL,values=basecol(4))+rect_temp +ylab("Pax6 expression")+xlab(NULL)
+ggsave(p,filename = "/home/shaliu_fu/multireg/cellGRN/eval/results/spatial_brain/pax6_exp_boxplot.pdf",width = 4.5,height = 3)
+
+
+p<-ggplot(cell_meta,aes(x=Sample,y=Pax6_regulon,col=Sample))+geom_boxplot(width=0.6)+scale_color_manual(values=basecol(4))+rect_temp +ylab("Pax6 expression")+xlab(NULL)
+ggsave(p,filename = "/home/shaliu_fu/multireg/cellGRN/eval/results/spatial_brain/pax6_tf_gene_boxplot.pdf",width =4.5,height = 3)
+
+# #
+# p <- ggplot(cell_meta, aes(x = Pseudotime_Combined, y = Pax6_exp)) +
+#   geom_smooth(method = "gam", color = "darkblue",se=FALSE) +
+#   rect_temp
+# p
+# 
+# p <- ggplot(cell_meta, aes(x = Pseudotime_Combined, y = Pax6_regulon)) +
+#   geom_smooth(method = "gam", color = "darkblue",se=FALSE) +
+#   rect_temp
+# p
+
+# 2. 然后绘制eomes的调控
+eomes_tab <-read.table("/home/shaliu_fu/multireg/cellGRN/eval/results/spatial_brain/spatial_brain_eomes_gene_peak_activity.csv",sep=",",header=T,row.names=1)
+eomes_tab2<-cbind(eomes_tab,rna_umap,cell_meta[,c(1:4)])
+eomes_tab2["Eomes_exp"] = log2(eomes_tab2['expression']+1)
+eomes_tab2['Eomes_regulon'] = sqrt(eomes_tab2['score'])
+
+# 在umap水平绘制eomes调控。
+p<-ggplot(eomes_tab2, aes(x=UMAP_1,y=UMAP_2,col=Eomes_exp)) +geom_point()+scale_color_viridis_c(NULL)+rect_temp
+ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/spatial_brain/cell_umap_eomes_expr.pdf",width = 5.5,height = 4)
+
+p<-ggplot(eomes_tab2, aes(x=UMAP_1,y=UMAP_2,col=Eomes_regulon)) +geom_point()+scale_color_viridis_c(NULL)+rect_temp
+ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/spatial_brain/cell_umap_eomes_regulon.pdf",width = 5.5,height = 4)
+
+# 在空转水平绘制eomes调控。
+p<-ggplot(eomes_tab2, aes(x = array_col, y = array_row, color = Eomes_exp)) +
+  geom_point(size = 1.5) +           # 点的大小
+  scale_color_viridis_c(NULL) +
+  theme_void() +                     # 去掉背景网格
+  coord_fixed() +                    # 保证 X 和 Y 轴比例一致，防止图形拉伸
+  scale_y_reverse() #+                # 【关键】通常空间坐标的Y轴是反的（原点在左上角），如果图是倒的，加上这一行
+ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/spatial_brain/spatial_eomes_expr.pdf",width = 5.5,height = 4)
+
+p<-ggplot(eomes_tab2, aes(x = array_col, y = array_row, color = Eomes_regulon)) +
+  geom_point(size = 1.5) +           # 点的大小
+  scale_color_viridis_c(NULL) +
+  theme_void() +                     # 去掉背景网格
+  coord_fixed() +                    # 保证 X 和 Y 轴比例一致，防止图形拉伸
+  scale_y_reverse() #+                # 【关键】通常空间坐标的Y轴是反的（原点在左上角），如果图是倒的，加上这一行
+ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/spatial_brain/spatial_eomes_regulon.pdf",width = 5.5,height = 4)
+
+# 绘制eomes表达和调控的boxplot.
+p<-ggplot(eomes_tab2,aes(x=Sample,y=Eomes_exp,col=Sample))+geom_boxplot(width=0.6)+scale_color_manual(NULL,values=basecol(4))+rect_temp +ylab("Eomes expression")+xlab(NULL)
+ggsave(p,filename = "/home/shaliu_fu/multireg/cellGRN/eval/results/spatial_brain/eomes_exp_boxplot.pdf",width = 4.5,height = 3)
+
+
+p<-ggplot(eomes_tab2,aes(x=Sample,y=Eomes_regulon,col=Sample))+geom_boxplot(width=0.6)+scale_color_manual(values=basecol(4))+rect_temp +ylab("Eomes regulon")+xlab(NULL)
+ggsave(p,filename = "/home/shaliu_fu/multireg/cellGRN/eval/results/spatial_brain/eomes_tf_gene_boxplot.pdf",width = 4.5,height = 3)
+
+
+# 绘制随着pseudotime变化的曲线图。
+
+p_tab1 =eomes_tab2[,c("Pseudotime_Combined","Eomes_exp")]
+p_tab1['group'] = "Eomes expression"
+colnames(p_tab1)[2] = 'score'
+
+
+p_tab2 = eomes_tab2[,c("Pseudotime_Combined","Eomes_regulon")]
+p_tab2['group'] = "Eomes regulon"
+colnames(p_tab2)[2] = 'score'
+
+# for visualization
+p_tab1$score = p_tab1$score/max(p_tab1$score)
+p_tab2$score = p_tab2$score/max(p_tab2$score)
+
+
+p_tab = rbind(p_tab1,p_tab2)
+p <- ggplot(p_tab, aes(x = Pseudotime_Combined/100, y = score,group=group,col=group)) +
+  geom_smooth(method = "gam",se=FALSE) + scale_color_manual(NULL,values=c("darkblue","#d95f0e")) +
+  rect_temp+ylab("Activity") +xlab("Pseudotime")
+ggsave(p,filename ="/home/shaliu_fu/multireg/cellGRN/eval/results/spatial_brain/eomes_pseudotime_line.pdf",width =6,height = 4)
+
+
+# 同样绘制pax6 
+p_tab1 =cell_meta[,c("Pseudotime_Combined","Pax6_exp")]
+p_tab1['group'] = "Pax6 expression"
+colnames(p_tab1)[2] = 'score'
+
+p_tab2 = cell_meta[,c("Pseudotime_Combined","Pax6_regulon")]
+p_tab2['group'] = "Pax6 regulon"
+colnames(p_tab2)[2] = 'score'
+
+p_tab1$score = p_tab1$score/max(p_tab1$score)
+p_tab2$score = p_tab2$score/max(p_tab2$score)
+
+p_tab = rbind(p_tab1,p_tab2)
+p <- ggplot(p_tab, aes(x = Pseudotime_Combined/100, y = score,group=group,col=group)) +
+  geom_smooth(method = "gam",se=FALSE) + scale_color_manual(NULL,values=c("darkblue","#d95f0e")) +
+  rect_temp+ylab("Activity") +xlab("Pseudotime")
+ggsave(p,filename ="/home/shaliu_fu/multireg/cellGRN/eval/results/spatial_brain/pax6_pseudotime_line.pdf",width =6,height = 4)
+
+
+# 绘制参考线
+p<-ggplot(eomes_tab2,aes(x=Pseudotime_Combined/100,col=Sample,y=1))+geom_line(linewidth=5)+theme_void()+scale_color_manual(NULL,values=basecol(4))
+ggsave(p,filename ="/home/shaliu_fu/multireg/cellGRN/eval/results/spatial_brain/pseudotime_annot.pdf",width =6,height = 4)
+
+```
+
+

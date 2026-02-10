@@ -1,0 +1,206 @@
+```{r}
+
+library(ggplot2)
+library(gridExtra)
+library(RColorBrewer)
+library(ggsci)
+library(patchwork)
+library(tidyr)
+library(dplyr)
+
+mytemp<-theme(panel.background=element_rect(fill="white",colour=NA), panel.grid.major =element_blank(), panel.grid.minor = element_blank(),axis.line = element_line(colour = "black",size=0.5),axis.text.x = element_text(colour = "black"),axis.text.y =element_text(colour = "black"),
+              axis.title.y=element_text(colour = "black"))
+
+widetemp<-theme(panel.background=element_rect(fill="white",colour=NA), panel.grid.major =element_blank(), panel.grid.minor = element_blank(),axis.line = element_line(colour = "black",size=0.5),axis.text.x = element_text(angle = 30,size = 12,hjust = 1,colour = "black"),axis.text.y =element_text(size = 12,colour = "black"),
+                axis.title.y=element_text(size=12,colour = "black"),legend.text=element_text(size=12))
+
+rect_temp<-theme_bw()+theme(panel.background=element_rect(fill="white",colour=NA), panel.grid.minor = element_blank(), panel.grid.major =element_blank(),axis.text.y =element_text(colour = "black"), axis.title.y=element_text(colour = "black"))
+
+basecol<-function(n){
+  colall<-c('#d7191c','#31a354','#756bb1','#0571b0','#d95f0e','#bdbdbd')
+  return(colall[c(1:n)])
+}
+
+new_palette <- c( RColorBrewer::brewer.pal(5, "Set1"),'#bdbdbd',"#f781bf")
+
+mypal <- pal_d3(palette = "category20", alpha = 1)(14)
+
+
+contrast_pal =c('#0571b0','#d7191c',"#9ecae1","#fdbb84","#3182bd","#e34a33")
+```
+
+
+
+
+
+```{r}
+# 1. tf recovery bar plot.
+tf_peak_tf_recov <-read.csv("/home/shaliu_fu/multireg/cellGRN/eval/results/melanoma/melanoma_tf_recov_tf_peak.csv",header=TRUE)
+tf_gene_tf_recov <-read.csv("/home/shaliu_fu/multireg/cellGRN/eval/results/melanoma/melanoma_tf_recov_tf_gene.csv",header=TRUE)
+
+
+tf_peak_tf_recov$method <- plyr::mapvalues(tf_peak_tf_recov$method,from=c("scenic2_thres_scale2_samp","linger_thres_scale2_samp","LINGER_ctx","linger_thres_scale2_ctx"),to=c("CellGRN_SCENIC+","CellGRN_LINGER", "LINGER celltype","CellGRN_LINGER celltype"))
+
+tf_gene_tf_recov$method <- plyr::mapvalues(tf_gene_tf_recov$method,from=c("scenic2_thres_scale2_samp","linger_thres_scale2_samp","LINGER_ctx","linger_thres_scale2_ctx"),to=c("CellGRN_SCENIC+","CellGRN_LINGER", "LINGER celltype","CellGRN_LINGER celltype"))
+
+
+tf_peak_tf_recov2  = tf_peak_tf_recov[1:4,]
+tf_peak_tf_recov2$method = factor(tf_peak_tf_recov2$method,levels=c("SCENIC+" , "CellGRN_SCENIC+", "LINGER","CellGRN_LINGER"))
+
+
+p<-ggplot(tf_peak_tf_recov2,aes(x=method,y=Best_F1_avg,fill=method))+geom_col(alpha=1,width = 0.7)+rect_temp+xlab(NULL)+ylab("F1 score")+coord_flip()+scale_fill_manual(NULL,values=contrast_pal)+theme(legend.position = "none")
+
+ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/melanoma/melanoma_tf_recov_tf_peak_sample.pdf",height = 3.5,width = 4)
+
+
+tf_gene_tf_recov2 = tf_gene_tf_recov[1:5,]
+tf_gene_tf_recov2$method = factor(tf_gene_tf_recov2$method,levels=c("Pearson","SCENIC+" , "CellGRN_SCENIC+", "LINGER","CellGRN_LINGER"))
+
+p<-ggplot(tf_gene_tf_recov2,aes(x=method,y=Best_F1_avg,fill=method))+geom_col(alpha=1,width = 0.7)+rect_temp+xlab(NULL)+ylab("F1 score")+coord_flip()+scale_fill_manual(NULL,values=c("#bdbdbd",contrast_pal[1:4]))+theme(legend.position = "none")
+p
+# p<-ggplot(tf_gene_tf_recov,aes(x=method,y=Best_F1_avg))+geom_col(fill="#2ca25f",alpha=0.8,width = 0.7)+rect_temp+xlab(NULL)+ylab("F1 score")+coord_flip()
+ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/melanoma/melanoma_tf_recov_tf_gene_sample.pdf",height = 4,width =4)
+
+
+# cell type的单独生成。
+tmp1 = tf_peak_tf_recov[5:6,]
+tmp1$type = "TF-Peak"
+tmp2 = tf_gene_tf_recov[6:7,]
+tmp2$type = "TF-Gene"
+p_tab = rbind(tmp1,tmp2)
+
+
+p<-ggplot(p_tab,aes(x=type,y=Best_F1_avg,fill=method))+geom_col(alpha=1,width = 0.7,position="dodge")+rect_temp+xlab(NULL)+ylab("F1 score")+coord_flip()+scale_fill_manual(NULL,values=c(contrast_pal[3:4]))
+ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/melanoma/melanoma_tf_recov_celltype.pdf",height = 4,width = 6)
+
+
+# 补下每个ctx的结果。
+tf_peak_tf_recov_ctx <-read.csv("/home/shaliu_fu/multireg/cellGRN/eval/results/melanoma/melanoma_tf_recov_tf_peak_ctx.csv",header=TRUE)
+tf_gene_tf_recov_ctx <-read.csv("/home/shaliu_fu/multireg/cellGRN/eval/results/melanoma/melanoma_tf_recov_tf_gene_ctx.csv",header=TRUE)
+
+
+tf_peak_tf_recov_ctx$method <- plyr::mapvalues(tf_peak_tf_recov_ctx$method,from=c("scenic2_thres_scale2_samp","linger_thres_scale2_samp","LINGER_ctx","linger_thres_scale2_ctx"),to=c("CellGRN_SCENIC+","CellGRN_LINGER", "LINGER","CellGRN_LINGER"))
+
+tf_gene_tf_recov_ctx$method <- plyr::mapvalues(tf_gene_tf_recov_ctx$method,from=c("scenic2_thres_scale2_samp","linger_thres_scale2_samp","LINGER_ctx","linger_thres_scale2_ctx"),to=c("CellGRN_SCENIC+","CellGRN_LINGER", "LINGER","CellGRN_LINGER"))
+
+
+tf_peak_tf_recov_ctx2 = tf_peak_tf_recov_ctx[c(1:12),]
+tf_peak_tf_recov_ctx2$method = factor(tf_peak_tf_recov_ctx2$method,levels=c("CellGRN_SCENIC+", "SCENIC+","CellGRN_LINGER", "LINGER"))
+
+p<-ggplot(tf_peak_tf_recov_ctx2,aes(x=method,y=Best_F1,col=cell_type))+geom_jitter(width=0.2,height = 0,size=3)+scale_color_manual(NULL,values=basecol(6))+rect_temp+xlab(NULL)+ylab("F1 score")
+ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/melanoma/melanoma_tf_recov_tf_peak_scatter_sample.pdf",height = 4,width = 6)
+
+
+tf_gene_tf_recov_ctx2 = tf_gene_tf_recov_ctx[c(1:15),]
+tf_gene_tf_recov_ctx2$method = factor(tf_gene_tf_recov_ctx2$method,levels=c("CellGRN_SCENIC+", "SCENIC+","CellGRN_LINGER", "LINGER","Pearson"))
+
+p<-ggplot(tf_gene_tf_recov_ctx2,aes(x=method,y=Best_F1,col=cell_type))+geom_jitter(width=0.2,height = 0,size=3)+scale_color_manual(NULL,values=basecol(6))+rect_temp+xlab(NULL)+ylab("F1 score")
+ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/melanoma/melanoma_tf_recov_tf_gene_scatter_sample.pdf",height = 4,width = 6)
+
+tmp1 = tf_peak_tf_recov_ctx[13:18,]
+tmp1$type = "TF-Peak"
+tmp2 = tf_gene_tf_recov_ctx[16:21,]
+tmp2$type = "TF-Gene"
+p_tab = rbind(tmp1,tmp2)
+
+p_tab$label = paste(p_tab$method,p_tab$type)
+p_tab$label = factor(p_tab$label,levels = rev(unique(p_tab$label)))
+p<-ggplot(p_tab)+geom_jitter(aes(x=label,y=Best_F1,col=cell_type),width=0.2,height = 0,size=3,alpha=0.8)+scale_color_manual(NULL,values=basecol(6))+rect_temp+xlab(NULL)+ylab("F1 score")+theme(axis.text.x = element_text(angle = 30,size = 12,hjust = 1,colour = "black"))
+ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/melanoma/melanoma_tf_recov_scatter_celltype.pdf",height = 4.5,width = 6)
+
+```
+
+
+```{r}
+
+
+# 2. mpra enhancer discovery pr results.
+mel_mpra_gene_peak_res = read.csv("/home/shaliu_fu/multireg/cellGRN/eval/results/melanoma/melanoma_gene_peak_mpra_enhancer_pr_curve.csv",header=TRUE)
+mel_mpra_tf_peak_res = read.csv("/home/shaliu_fu/multireg/cellGRN/eval/results/melanoma/melanoma_tf_peak_mpra_enhancer_pr_curve.csv",header=TRUE)
+
+mel_mpra_gene_peak_tab = read.csv("/home/shaliu_fu/multireg/cellGRN/eval/results/melanoma/melanoma_gene_peak_mpra_enhancer_res.csv",header=TRUE)
+
+mel_mpra_tf_peak_tab = read.csv("/home/shaliu_fu/multireg/cellGRN/eval/results/melanoma/melanoma_tf_peak_mpra_enhancer_res.csv",header=TRUE)
+
+mel_mpra_gene_peak_res$method = plyr::mapvalues(mel_mpra_gene_peak_res$method,from=c("scenic2_thres_scale2_samp","linger_thres_scale2_samp","LINGER_ctx","linger_thres_scale2_ctx"),to=c("CellGRN_SCENIC+","CellGRN_LINGER", "LINGER celltype","CellGRN_LINGER celltype"))
+
+mel_mpra_tf_peak_res$method = plyr::mapvalues(mel_mpra_tf_peak_res$method,from=c("scenic2_thres_scale2_samp","linger_thres_scale2_samp","LINGER_ctx","linger_thres_scale2_ctx"),to=c("CellGRN_SCENIC+","CellGRN_LINGER", "LINGER celltype","CellGRN_LINGER celltype"))
+
+p_tab = mel_mpra_gene_peak_res
+p_tab  = p_tab %>% arrange(recall, desc(prec)) # ggplot 相同x值可视化bug
+
+p_tab$method = factor(p_tab$method,levels=c("SCENIC+" , "CellGRN_SCENIC+", "LINGER","CellGRN_LINGER"))
+
+p<-ggplot(p_tab,aes(x=recall,y=prec,col=paste0(method,":",round(prauc,4))))+geom_line()+scale_color_manual(NULL,values=c("#fdbb84",'#d7191c',"#9ecae1",'#0571b0'))+rect_temp+xlim(0,0.1)+xlab("Recall")+ylab("Precision")
+
+
+ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/melanoma/melanoma_gene_peak_mpra_prauc.pdf",height = 3.5,width = 6.5)
+
+p_tab = mel_mpra_tf_peak_res
+p_tab$method = factor(p_tab$method,levels=c("SCENIC+" , "CellGRN_SCENIC+", "LINGER","CellGRN_LINGER"))
+
+p_tab = subset(p_tab,method!="SCENIC+")
+p_tab  = p_tab %>% arrange(recall, desc(prec)) 
+p<-ggplot(p_tab,aes(x=recall,y=prec,col=paste0(method,":",round(prauc,5))))+geom_line()+scale_color_manual(NULL,values=c("#fdbb84",'#d7191c',"#9ecae1",'#0571b0'))+rect_temp+xlim(0,0.1)+xlab("Recall")+ylab("Precision")
+
+
+ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/melanoma/melanoma_tf_peak_mpra_prauc.pdf",height = 3.5,width = 6.5)
+
+
+# 绘制三个指标的柱状图（窄）
+mel_mpra_gene_peak_tab$method = plyr::mapvalues(mel_mpra_gene_peak_tab$method,from=c("scenic2_thres_scale2_samp","linger_thres_scale2_samp","LINGER_ctx","linger_thres_scale2_ctx"),to=c("CellGRN_SCENIC+","CellGRN_LINGER", "LINGER celltype","CellGRN_LINGER celltype"))
+
+mel_mpra_gene_peak_tab$method = factor(mel_mpra_gene_peak_tab$method,levels=c("LINGER celltype", "CellGRN_LINGER celltype","SCENIC+" , "CellGRN_SCENIC+", "LINGER","CellGRN_LINGER"))
+
+mel_mpra_tf_peak_tab$method = plyr::mapvalues(mel_mpra_tf_peak_tab$method,from=c("scenic2_thres_scale2_samp","linger_thres_scale2_samp","LINGER_ctx","linger_thres_scale2_ctx"),to=c("CellGRN_SCENIC+","CellGRN_LINGER", "LINGER celltype","CellGRN_LINGER celltype"))
+mel_mpra_tf_peak_tab$method = factor(mel_mpra_tf_peak_tab$method,levels=c("LINGER celltype", "CellGRN_LINGER celltype","SCENIC+" , "CellGRN_SCENIC+", "LINGER","CellGRN_LINGER"))
+
+p1<-ggplot(mel_mpra_gene_peak_tab,aes(x=method,y=PRAUC,fill=method))+geom_col(width=0.7)+coord_flip()+rect_temp+xlab(NULL)+ylab("PR-AUC")+scale_fill_manual(NULL,values=contrast_pal)+theme(legend.position = "none")
+
+p2<-ggplot(mel_mpra_gene_peak_tab,aes(x=method,y=EPR,fill=method))+geom_col(width=0.7)+coord_flip()+rect_temp+xlab(NULL)+ylab("EPR")+scale_fill_manual(NULL,values=contrast_pal)+theme(legend.position = "none")
+
+p3<-ggplot(mel_mpra_gene_peak_tab,aes(x=method,y=F1,fill=method))+geom_col(width=0.7)+coord_flip()+rect_temp+xlab(NULL)+ylab("F1-score")+scale_fill_manual(NULL,values=contrast_pal)+theme(legend.position = "none")
+
+plot_comb<- grid.arrange(p1,p2,p3, ncol=3, nrow=1)
+ggsave(plot_comb,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/melanoma/melanoma_gene_peak_mpra_bar.pdf",width=8,height=3.5)
+
+# SCENIC+ binary prediction n.a. for pr curve and pr-auc.
+mel_mpra_tf_peak_tab[1,2] = NA
+mel_mpra_tf_peak_tab[1,3] = NA
+p1<-ggplot(mel_mpra_tf_peak_tab,aes(x=method,y=PRAUC,fill=method))+geom_col(width=0.7)+coord_flip()+rect_temp+xlab(NULL)+ylab("PR-AUC")+scale_fill_manual(NULL,values=contrast_pal)+theme(legend.position = "none")
+
+p2<-ggplot(mel_mpra_tf_peak_tab,aes(x=method,y=EPR,fill=method))+geom_col(width=0.7)+coord_flip()+rect_temp+xlab(NULL)+ylab("EPR")+scale_fill_manual(NULL,values=contrast_pal)+theme(legend.position = "none")
+
+p3<-ggplot(mel_mpra_tf_peak_tab,aes(x=method,y=F1,fill=method))+geom_col(width=0.7)+coord_flip()+rect_temp+xlab(NULL)+ylab("F1-score")+scale_fill_manual(NULL,values=contrast_pal)+theme(legend.position = "none")
+
+plot_comb<- grid.arrange(p1,p2,p3, ncol=3, nrow=1)
+ggsave(plot_comb,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/melanoma/melanoma_tf_peak_mpra_bar.pdf",width=8,height=3.5)
+```
+
+
+```{r}
+# sox10 knockdown tf-gene evaluation.
+
+sox10_knock_res <-read.csv("/home/shaliu_fu/multireg/cellGRN/eval/results/melanoma/melanoma_tf_gene_sox10_res.csv",header=TRUE)
+
+sox10_knock_res$method = plyr::mapvalues(sox10_knock_res$method,from=c("scenic2_thres_scale2_samp","linger_thres_scale2_samp","LINGER_ctx","linger_thres_scale2_ctx"),to=c("CellGRN_SCENIC+","CellGRN_LINGER", "LINGER celltype","CellGRN_LINGER celltype"))
+
+sox10_knock_res$method = factor(sox10_knock_res$method,levels=c("Pearson","LINGER celltype", "CellGRN_LINGER celltype","SCENIC+" , "CellGRN_SCENIC+", "LINGER","CellGRN_LINGER"))
+p1<-ggplot(sox10_knock_res,aes(x=method,y=PRAUC,fill=method))+geom_col(width=0.7)+coord_flip()+rect_temp+xlab(NULL)+ylab("PR-AUC")+scale_fill_manual(NULL,values=c("#bdbdbd",contrast_pal[1:4]))+theme(legend.position = "none")
+
+p2<-ggplot(sox10_knock_res,aes(x=method,y=EPR,fill=method))+geom_col(width=0.7)+coord_flip()+rect_temp+xlab(NULL)+ylab("EPR")+scale_fill_manual(NULL,values=c("#bdbdbd",contrast_pal[1:4]))+theme(legend.position = "none")
+
+
+plot_comb<- grid.arrange(p1,p2, ncol=2, nrow=1)
+ggsave(plot_comb,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/melanoma/melanoma_sox10_tf_gene_bar.pdf",width=6,height=3.5)
+
+# plot pr curve.
+sox10_knock_pr<-read.csv("/home/shaliu_fu/multireg/cellGRN/eval/results/melanoma/melanoma_tf_gene_sox10_pr_curve.csv",header=TRUE)
+sox10_knock_pr$method = plyr::mapvalues(sox10_knock_pr$method,from=c("scenic2_thres_scale2_samp","linger_thres_scale2_samp","LINGER_ctx","linger_thres_scale2_ctx"),to=c("CellGRN_SCENIC+","CellGRN_LINGER", "LINGER celltype","CellGRN_LINGER celltype"))
+sox10_knock_pr$method = factor(sox10_knock_pr$method,levels=c("Pearson","LINGER celltype", "CellGRN_LINGER celltype","SCENIC+" , "CellGRN_SCENIC+", "LINGER","CellGRN_LINGER"))
+p_tab = sox10_knock_pr
+p_tab  = p_tab %>% arrange(recall, desc(prec)) # ggplot 相同x值可视化bug
+p<-ggplot(p_tab,aes(x=recall,y=prec,col=method))+geom_line()+scale_color_manual(NULL,values=c("#bdbdbd",'#0571b0','#d7191c',"#fdbb84"))+rect_temp+xlim(0,0.2)+xlab("Recall")+ylab("Precision")
+ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/melanoma/melanoma_sox10_knock_pr.pdf",height = 3.5,width = 5.5)
+```
+

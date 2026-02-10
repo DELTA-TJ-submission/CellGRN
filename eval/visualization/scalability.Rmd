@@ -1,0 +1,47 @@
+```{r}
+
+library(ggplot2)
+library(gridExtra)
+library(RColorBrewer)
+library(ggsci)
+library(patchwork)
+library(tidyr)
+library(dplyr)
+
+mytemp<-theme(panel.background=element_rect(fill="white",colour=NA), panel.grid.major =element_blank(), panel.grid.minor = element_blank(),axis.line = element_line(colour = "black",size=0.5),axis.text.x = element_text(colour = "black"),axis.text.y =element_text(colour = "black"),
+              axis.title.y=element_text(colour = "black"))
+
+widetemp<-theme(panel.background=element_rect(fill="white",colour=NA), panel.grid.major =element_blank(), panel.grid.minor = element_blank(),axis.line = element_line(colour = "black",size=0.5),axis.text.x = element_text(angle = 30,size = 12,hjust = 1,colour = "black"),axis.text.y =element_text(size = 12,colour = "black"),
+                axis.title.y=element_text(size=12,colour = "black"),legend.text=element_text(size=12))
+
+rect_temp<-theme_bw()+theme(panel.background=element_rect(fill="white",colour=NA), panel.grid.minor = element_blank(), panel.grid.major =element_blank(),axis.text.y =element_text(colour = "black"), axis.title.y=element_text(colour = "black"))
+
+basecol<-function(n){
+  colall<-c('#d7191c','#31a354','#756bb1','#0571b0','#d95f0e','#bdbdbd')
+  return(colall[c(1:n)])
+}
+
+new_palette <- c( RColorBrewer::brewer.pal(5, "Set1"),'#bdbdbd',"#f781bf")
+
+mypal <- pal_d3(palette = "category20", alpha = 1)(14)
+
+contrast_pal =c('#0571b0','#d7191c',"#3182bd","#e34a33","#9ecae1","#fdbb84")
+```
+
+
+```{r}
+scal_raw = read.csv("/home/shaliu_fu/multireg/cellGRN/eval/results/scalability2.csv",header=TRUE)
+scal_raw['size']=c(500,1000,5000,10000,50000)
+scal_raw['soft'] = "CellGRN"
+scal_fast = read.csv("/home/shaliu_fu/multireg/cellGRN/eval/results/scalability3.csv",header=TRUE)
+scal_fast['size']=c(500,1000,5000,10000,50000)
+scal_fast['soft'] = "CellGRN-sparse"
+p_tab = rbind(scal_raw,scal_fast)
+p<-ggplot(p_tab,aes(x=size,y=time_sec,col=soft,group=soft))+geom_line()+geom_point()+rect_temp+ylab("Seconds")+xlab("Number of cells")+scale_color_manual(NULL,values=basecol(2))
+ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/running_time.pdf",height=4,width=6)
+
+p_tab$peak_memory_gb = p_tab$peak_memory_mb/1024
+p<-ggplot(p_tab,aes(x=size,y=peak_memory_gb,col=soft,group=soft))+geom_line()+geom_point()+rect_temp+ylab("Peak memory (GB)")+xlab("Number of cells")+scale_color_manual(NULL,values=basecol(2))
+ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/peak_memory.pdf",height=4,width=6)
+```
+

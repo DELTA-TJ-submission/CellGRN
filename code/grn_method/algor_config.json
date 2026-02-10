@@ -1,0 +1,83 @@
+{
+    "GLUE":{
+        "env_name":" scglue_env",
+        "module_folder":"/home/shaliu_fu/multireg/benchmark/multiGRN_bench/algor_modules/",
+        "module_path":"/home/shaliu_fu/multireg/benchmark/multiGRN_bench/algor_modules/task_glue.sh"
+    },
+    "scenic2":{
+        "env_name":" scenic2_env",
+        "module_folder":"/home/shaliu_fu/multireg/benchmark/multiGRN_bench/algor_modules/",
+        "module_path":"/home/shaliu_fu/multireg/benchmark/multiGRN_bench/algor_modules/task_scenic2.sh",
+        "db":{
+            "human":{
+                "rankings_db":"/home/shaliu_fu/multireg/benchmark/db/cistarget_db/hg38/hg38_screen_v10_clust.regions_vs_motifs.rankings.feather",
+                "scores_db":"/home/shaliu_fu/multireg/benchmark/db/cistarget_db/hg38/hg38_screen_v10_clust.regions_vs_motifs.scores.feather",
+                "motif_annotation":"/home/shaliu_fu/multireg/benchmark/db/cistarget_db/hg38/motifs-v10nr_clust-nr.hgnc-m0.001-o0.0.tbl",
+                "blacklist_file":"/home/shaliu_fu/multireg/benchmark/db/hg38-blacklist.v2.bed",
+                "tf_all":"/home/shaliu_fu/multireg/benchmark/db/TF_names_v_1.01.txt"
+            },
+            "mouse":{
+                "rankings_db":"/home/shaliu_fu/multireg/benchmark/db/cistarget_db/mm10/mm10_screen_v10_clust.regions_vs_motifs.rankings.feather",
+                "scores_db":"/home/shaliu_fu/multireg/benchmark/db/cistarget_db/mm10/mm10_screen_v10_clust.regions_vs_motifs.scores.feather",
+                "motif_annotation":"/home/shaliu_fu/multireg/benchmark/db/cistarget_db/mm10/motifs-v10nr_clust-nr.mgi-m0.001-o0.0.tbl",
+                "blacklist_file":"/home/shaliu_fu/multireg/benchmark/db/mm10-blacklist.v2.bed"
+            }
+        },
+        "mallet_path":"/home/shaliu_fu/multireg/benchmark/src/Mallet-202108/bin/mallet"
+    },
+    "pando":{
+        "env_name":" pando_env",
+        "module_folder":"/home/shaliu_fu/multireg/benchmark/multiGRN_bench/algor_modules/",
+        "module_path":"/home/shaliu_fu/multireg/benchmark/multiGRN_bench/algor_modules/task_pando.sh"
+    },
+    "celloracle":{
+        "env_name":" celloracle_env",
+        "module_folder":"/home/shaliu_fu/multireg/benchmark/multiGRN_bench/algor_modules/",
+        "module_path":"/home/shaliu_fu/multireg/benchmark/multiGRN_bench/algor_modules/task_celloracle.sh",
+        "chrom_size": {
+            "human":"/home/shaliu_fu/multireg/benchmark/db/hg38.chrom.sizes.mainonly",
+            "mouse":"/home/shaliu_fu/multireg/benchmark/db/mm10.chrom.sizes.mainonly"
+        }
+    },
+    "figR":{
+        "env_name":" figr_env",
+        "module_folder":"/home/shaliu_fu/multireg/benchmark/multiGRN_bench/algor_modules/",
+        "module_path":"/home/shaliu_fu/multireg/benchmark/multiGRN_bench/algor_modules/task_figR.sh"
+    },
+    "LINGER":{
+        "env_name":" LINGER_env",
+        "module_folder":"/home/shaliu_fu/multireg/benchmark/multiGRN_bench/algor_modules/",
+        "module_path":"/home/shaliu_fu/multireg/benchmark/multiGRN_bench/algor_modules/task_linger.sh"
+    },
+    "multiGRN":{
+        "env_name":" scMVP2_env",
+        "module_folder":"/home/shaliu_fu/multireg/benchmark/multiGRN_bench/algor_modules/",
+        "module_path":"/home/shaliu_fu/multireg/benchmark/multiGRN_bench/algor_modules/task_multigrn.sh",
+        "db":{
+            "human":{
+                "tf_all":"/home/shaliu_fu/multireg/multigrn/db/all_hg_TF.txt"
+            }
+        }
+    },
+    "multiGRN_full":{
+        "env_name":" scMVP2_env",
+        "module_folder":"/home/shaliu_fu/multireg/benchmark/multiGRN_bench/algor_modules/",
+        "module_path":"/home/shaliu_fu/multireg/benchmark/multiGRN_bench/algor_modules/task_multigrn_full.sh",
+        "db":{
+            "human":{
+                "tf_all":"/home/shaliu_fu/multireg/multigrn/db/all_hg_TF.txt"
+            }
+        }
+    },
+    "SparseGRN":{
+        "env_name":" scMVP2_env",
+        "module_folder":"/home/shaliu_fu/multireg/benchmark/multiGRN_bench/algor_modules/",
+        "module_path":"/home/shaliu_fu/multireg/benchmark/multiGRN_bench/algor_modules/task_multigrn.sh",
+        "db":{
+            "human":{
+                "tf_all":"/home/shaliu_fu/multireg/multigrn/db/all_hg_TF.txt",
+                "gene_promoter": "/home/shaliu_fu/multireg/multigrn/db/hg38_promoter.bed"
+            }
+        }
+    }
+}
