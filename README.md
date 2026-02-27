@@ -52,3 +52,5 @@ A demo code for CellGRN and CellGRN-sparse [tutorial](./tutorial.ipynb)
 - [eval/visualization/](eval/visualization/): R  scripts to plot figure in our manuscript.
 
 
+## Reference
+Reconstructing cell-specific GRN to decipher regulatory heterogeneity from single-cell multi-omics. (submited)
