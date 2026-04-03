@@ -1,0 +1,242 @@
+
+
+
+```{r}
+
+library(ggplot2)
+library(gridExtra)
+library(RColorBrewer)
+library(ggsci)
+library(patchwork)
+library(tidyr)
+library(dplyr)
+  
+
+mytemp<-theme(panel.background=element_rect(fill="white",colour=NA), panel.grid.major =element_blank(), panel.grid.minor = element_blank(),axis.line = element_line(colour = "black",size=0.5),axis.text.x = element_text(colour = "black"),axis.text.y =element_text(colour = "black"),
+              axis.title.y=element_text(colour = "black"))
+
+widetemp<-theme(panel.background=element_rect(fill="white",colour=NA), panel.grid.major =element_blank(), panel.grid.minor = element_blank(),axis.line = element_line(colour = "black",size=0.5),axis.text.x = element_text(angle = 30,size = 12,hjust = 1,colour = "black"),axis.text.y =element_text(size = 12,colour = "black"),
+                axis.title.y=element_text(size=12,colour = "black"),legend.text=element_text(size=12))
+
+rect_temp<-theme_bw()+theme(panel.background=element_rect(fill="white",colour=NA), panel.grid.minor = element_blank(), panel.grid.major =element_blank(),axis.text.y =element_text(colour = "black"), axis.title.y=element_text(colour = "black"))
+
+basecol<-function(n){
+  colall<-c('#d7191c','#31a354','#756bb1','#0571b0','#d95f0e','#bdbdbd')
+  return(colall[c(1:n)])
+}
+
+new_palette <- c( RColorBrewer::brewer.pal(5, "Set1"),'#bdbdbd',"#f781bf")
+
+mypal <- pal_d3(palette = "category20", alpha = 1)(14)
+source("./plot_scmmib_table.r")
+
+
+normalize <- function(x) {
+  min_x <- min(x, na.rm = TRUE)  # 忽略NA
+  max_x <- max(x, na.rm = TRUE)
+  if (max_x == min_x) {          # 避免除以0
+    return(rep(0, length(x)))
+  }else{
+    return( (x - min_x) / (max_x - min_x))
+  }
+}
+
+calc_score<-function(df){
+  df_norm <- as.data.frame(apply(df, 2, normalize))
+  row_mean <- rowMeans(df_norm)
+  return(row_mean)
+}
+```
+
+## 1. Summarise CellGRN and Backbone Methods performance.
+```{r}
+# 1.1 collect PBMC results.
+
+# gene-peak, hic only
+pbmc_gene_peak_res = read.csv("~/multireg/cellGRN/eval/results/pbmc/pbmc_ctx_hic_res.csv",header=T)
+original_order <- unique(pbmc_gene_peak_res$method)  
+
+pbmc_gene_peak_res2 <- pbmc_gene_peak_res %>%
+  group_by(method) %>%  # 按第一列method分组，自动去重method
+  summarise(
+    # 批量对第2-4列（3个指标）计算均值，na.rm=TRUE自动忽略缺失值NA
+    across(c(PRAUC, EPR, F1), ~ mean(.x, na.rm = TRUE))
+  ) %>%
+  ungroup() %>%
+  arrange(factor(method, levels = original_order))  
+
+pbmc_gene_peak_score = data.frame(method = original_order, pbmc_gene_peak = calc_score(pbmc_gene_peak_res2[,-1]))
+
+
+# enhancer recovery, include sample and ctx results.
+pbmc_enhancer_tf_peak = read.csv("~/multireg/cellGRN/eval/results/pbmc/cd4_enhancer_tf_peak_res.csv",header=T)
+pbmc_enhancer_gene_peak = read.csv("~/multireg/cellGRN/eval/results/pbmc/cd4_enhancer_gene_peak_res.csv",header=T)
+
+pbmc_enhancer_score = data.frame(method = original_order, pbmc_enhancer = calc_score(cbind(pbmc_enhancer_tf_peak[,-1],pbmc_enhancer_gene_peak[,-1])))
+
+# tf-gene
+pbmc_tf_gene_sample = read.csv("~/multireg/cellGRN/eval/results/pbmc/pbmc_tf_knock_res.csv",header=T)
+
+pbmc_tf_gene_score = data.frame(method = pbmc_tf_gene_sample[-1,1], pbmc_tf_gene = calc_score(pbmc_tf_gene_sample[-1,-1]))
+
+# tf-recov
+pbmc_tf_gene_recov_sample = read.csv("~/multireg/cellGRN/eval/results/pbmc/tf_marker_tf_gene_res.csv",header = T)
+pbmc_tf_gene_recov_ctx = read.csv("~/multireg/cellGRN/eval/results/pbmc/tf_marker_tf_gene_res_ctx.csv",header = T)
+
+pbmc_tf_peak_recov_sample = read.csv("~/multireg/cellGRN/eval/results/pbmc/tf_marker_tf_peak_res.csv",header = T)
+pbmc_tf_peak_recov_ctx = read.csv("~/multireg/cellGRN/eval/results/pbmc/tf_marker_tf_peak_res_ctx.csv",header = T)
+
+pbmc_tf_recov_sample_score =  data.frame(method = pbmc_tf_gene_recov_sample[2:5,1], 
+                                   pbmc_tf_recov = calc_score(cbind(pbmc_tf_gene_recov_sample[2:5,2:4], pbmc_tf_peak_recov_sample[2:5,2:4])))
+
+pbmc_tf_peak_recov_ctx_res = pbmc_tf_peak_recov_ctx %>% 
+    group_by(method) %>%  # 按第一列method分组，自动去重method
+      summarise(
+        # 批量对第2-4列（3个指标）计算均值，na.rm=TRUE自动忽略缺失值NA
+        across(c(Best_Recall, Best_Precision, Best_F1), ~ mean(.x, na.rm = TRUE))
+      ) %>%
+      ungroup() %>%
+      arrange(factor(method, levels = original_order))
+
+pbmc_tf_gene_recov_ctx_res = pbmc_tf_gene_recov_ctx %>% 
+    group_by(method) %>%  # 按第一列method分组，自动去重method
+      summarise(
+        # 批量对第2-4列（3个指标）计算均值，na.rm=TRUE自动忽略缺失值NA
+        across(c(Best_Recall, Best_Precision, Best_F1), ~ mean(.x, na.rm = TRUE))
+      ) %>%
+      ungroup() %>%
+      arrange(factor(method, levels = original_order))
+
+pbmc_tf_recov_ctx_score = data.frame(method = pbmc_tf_gene_recov_ctx_res[5:6,1],pbmc_tf_recov = calc_score(cbind(pbmc_tf_gene_recov_ctx_res[5:6,2:4], pbmc_tf_peak_recov_ctx_res[5:6,2:4])))
+
+# 1.2 collect melanoma results
+melanoma_gene_peak_enhancer = read.csv("~/multireg/cellGRN/eval/results/melanoma/melanoma_gene_peak_mpra_enhancer_res.csv",header = T)
+melanoma_tf_peak_enhancer = read.csv("~/multireg/cellGRN/eval/results/melanoma/melanoma_tf_peak_mpra_enhancer_res.csv",header = T)
+
+melanoma_enhancer_score =  data.frame(method = melanoma_gene_peak_enhancer[,1],pbmc_tf_recov = calc_score(cbind(melanoma_gene_peak_enhancer[,2:4], melanoma_gene_peak_enhancer[,2:4])))
+
+melanoma_tf_gene = read.csv("~/multireg/cellGRN/eval/results/melanoma/melanoma_tf_gene_sox10_res.csv",header = T)
+
+melanoma_tf_gene_score =  data.frame(method = melanoma_tf_gene[-1,1],melanoma_tf_gene = calc_score(melanoma_tf_gene[-1,2:4]))
+
+
+melanoma_tf_gene_tf_recov_sample = read.csv("~/multireg/cellGRN/eval/results/melanoma/melanoma_tf_recov_tf_gene.csv",header = T)
+melanoma_tf_peak_tf_recov_sample = read.csv("~/multireg/cellGRN/eval/results/melanoma/melanoma_tf_recov_tf_peak.csv",header = T)
+
+# melanoma_tf_gene_tf_recov_ctx = read.csv("~/multireg/cellGRN/eval/results/melanoma/melanoma_tf_recov_tf_gene_ctx.csv",header = T)
+# melanoma_tf_peak_tf_recov_ctx = read.csv("~/multireg/cellGRN/eval/results/melanoma/melanoma_tf_recov_tf_peak_ctx.csv",header = T)
+
+melanoma_tf_recov_sample_score = data.frame(method = melanoma_tf_gene_tf_recov_sample[-1,1],pbmc_tf_recov = calc_score(cbind(melanoma_tf_gene_tf_recov_sample[-1,2:4], melanoma_tf_peak_tf_recov_sample[,2:4])))[1:4,]
+
+melanoma_tf_recov_ctx_score = data.frame(method = melanoma_tf_gene_tf_recov_sample[-1,1],pbmc_tf_recov = calc_score(cbind(melanoma_tf_gene_tf_recov_sample[-1,2:4], melanoma_tf_peak_tf_recov_sample[,2:4])))[5:6,]
+
+# generate sample-wise and cell-type-spec table.
+sample_table = data.frame(method=pbmc_gene_peak_sample$method,
+                          pbmc_gene_peak=pbmc_gene_peak_score[1:4,2],
+                          pbmc_enhancer=pbmc_enhancer_score[1:4,2],
+                          pbmc_tf_gene=pbmc_tf_gene_score[,2],
+                          pbmc_tf_recov=pbmc_tf_recov_sample_score[,2],
+                          melanoma_enhancer=melanoma_enhancer_score[,2],
+                          melanoma_tf_gene=melanoma_tf_gene_score[,2],
+                          melanoma_tf_recov=melanoma_tf_recov_sample_score[,2]
+                          )
+
+ctx_table = data.frame(method=melanoma_tf_recov_ctx_score$method,
+                       pbmc_gene_peak=pbmc_gene_peak_score[5:6,2],
+                        pbmc_enhancer=pbmc_enhancer_score[5:6,2],
+                       pbmc_tf_recov=pbmc_tf_recov_ctx_score[,2],
+                       melanoma_tf_recov=melanoma_tf_recov_ctx_score[,2]
+                       )
+
+# 绘制图。
+p_tab = sample_table
+colnames(p_tab) = c("method","PBMC Peak-Gene", "PBMC enhancer recovery","PBMC TF-Gene","PBMC TF recovery","Melanoma enhancer recovery","Melanoma TF-Gene","Melanoma TF recovery")
+p_tab$method = plyr::mapvalues(p_tab$method,from=c("scenic2_thres_scale2_samp","linger_thres_scale2_samp","LINGER_ctx","linger_thres_scale2_ctx"),to=c("CellGRN_SCENIC+","CellGRN_LINGER", "LINGER","CellGRN_LINGER"))
+p_tab = p_tab[c(3,2,4,1),]
+row_info = data.frame(id = p_tab$method)
+column_info <- data.frame(id = colnames(p_tab),
+                          group = c("Text",
+                                    rep("PBMC", 4),
+                                    rep("Melanoma",3)
+                                    ), 
+                          geom = c(rep("text",1),
+                                   rep("bar",7)),
+                          width = c(6, rep(2,7)),
+                          overlay = FALSE)
+my_palettes <- list(   "Text" = "black",
+                    "PBMC" = 'Greens',
+                    "Melanoma" = 'Blues'
+                   )
+p<-plot_scmmib_summary(data = p_tab,
+                       row_info = row_info,
+                       column_info =column_info,
+                       palettes = my_palettes,
+                       rank = FALSE,
+                       rect_normalize = TRUE
+                       )
+ggsave(p,filename="~/multireg/cellGRN/eval/results/samplewise_summary.pdf",height=6,width = 8)
+
+
+p_tab = ctx_table
+p_tab = p_tab[c(2,1),]
+colnames(p_tab) = c("method","PBMC Peak-Gene", "PBMC enhancer recovery","PBMC TF recovery","Melanoma TF recovery")
+p_tab$method = plyr::mapvalues(p_tab$method,from=c("scenic2_thres_scale2_samp","linger_thres_scale2_samp","LINGER_ctx","linger_thres_scale2_ctx"),to=c("CellGRN_SCENIC+","CellGRN_LINGER", "LINGER","CellGRN_LINGER"))
+
+row_info = data.frame(id = p_tab$method)
+column_info <- data.frame(id = colnames(p_tab),
+                          group = c("Text",
+                                    rep("PBMC", 3),
+                                    rep("Melanoma",1)
+                                    ), 
+                          geom = c(rep("text",1),
+                                   rep("bar",4)),
+                          width = c(6, rep(2,4)),
+                          overlay = FALSE)
+my_palettes <- list(   "Text" = "black",
+                    "PBMC" = 'Greens',
+                    "Melanoma" = 'Blues'
+                   )
+p<-plot_scmmib_summary(data = p_tab,
+                       row_info = row_info,
+                       column_info =column_info,
+                       palettes = my_palettes,
+                       rank = FALSE,
+                       rect_normalize = TRUE
+                       )
+ggsave(p,filename="~/multireg/cellGRN/eval/results/ctx_summary.pdf",height=6,width = 6)
+```
+
+
+
+
+## 2. plot backbone compare 
+```{r}
+
+backbone_tab = read.csv("~/multireg/cellGRN/eval/results/backbone_res.csv",header=TRUE,check.names = F)
+backbone_tab = backbone_tab[c(6,5,1,2,3,4),]
+colnames(backbone_tab) = c('method',"Peak-Gene", "Enhancer recovery","TF-Gene","TF recovery")
+bb_row_info = data.frame(id = backbone_tab$method)
+
+bb_column_info <- data.frame(id = colnames(backbone_tab),
+                          group = c("Text",
+                                    rep("Accuracy", 4)
+                                    ), 
+                          geom = c(rep("text",1),
+                                   rep("bar",4)),
+                          width = c(6, rep(2,4)),
+                          overlay = FALSE)
+bb_palettes <- list(   "Text" = "black",
+                    "Accuracy" = 'Greens'
+                   )
+p<-plot_scmmib_summary(data = backbone_tab,
+                       row_info = bb_row_info,
+                       column_info =bb_column_info,
+                       palettes = bb_palettes,
+                       rank = FALSE,
+                       rect_normalize = T
+                       )
+ggsave(p,filename="~/multireg/cellGRN/eval/results/backbone_summary.pdf",height=5,width = 6)
+
+
+```
+
