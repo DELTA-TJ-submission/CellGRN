@@ -53,4 +53,4 @@ A demo code for CellGRN and CellGRN-sparse [tutorial](./tutorial.ipynb)
 
 
 ## Reference
-Reconstructing cell-specific GRN to decipher regulatory heterogeneity from single-cell multi-omics. (submited)
+Cell-specific reconstruction improves gene regulatory network inference by resolving regulatory heterogeneity from single-cell multi-omics. (submited)
