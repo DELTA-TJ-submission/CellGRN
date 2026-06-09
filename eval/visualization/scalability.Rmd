@@ -7,6 +7,8 @@ library(ggsci)
 library(patchwork)
 library(tidyr)
 library(dplyr)
+library(lubridate)
+library(stringr)
 
 mytemp<-theme(panel.background=element_rect(fill="white",colour=NA), panel.grid.major =element_blank(), panel.grid.minor = element_blank(),axis.line = element_line(colour = "black",size=0.5),axis.text.x = element_text(colour = "black"),axis.text.y =element_text(colour = "black"),
               axis.title.y=element_text(colour = "black"))
@@ -26,6 +28,17 @@ new_palette <- c( RColorBrewer::brewer.pal(5, "Set1"),'#bdbdbd',"#f781bf")
 mypal <- pal_d3(palette = "category20", alpha = 1)(14)
 
 contrast_pal =c('#0571b0','#d7191c',"#3182bd","#e34a33","#9ecae1","#fdbb84")
+
+reformat_hms<-function(in_time){
+  in_time2<-str_split(in_time,pattern = ":",simplify = T)
+  if (dim(in_time2)[2]==2){
+    sec = round(as.numeric(in_time2[1,2]))
+    out_time = paste("0",in_time2[1,1],sec,sep=":")
+  }else{
+    out_time = in_time
+  }
+  return(out_time)
+}
 ```
 
 
@@ -36,12 +49,39 @@ scal_raw['soft'] = "CellGRN"
 scal_fast = read.csv("/home/shaliu_fu/multireg/cellGRN/eval/results/scalability3.csv",header=TRUE)
 scal_fast['size']=c(500,1000,5000,10000,50000)
 scal_fast['soft'] = "CellGRN-sparse"
+
+# 260505 add SCENIC+ and LINGER for comparison
+backbone_scal = read.csv("/home/shaliu_fu/multireg/cellGRN/eval/results/backbone_scal.csv",header = TRUE)
+backbone_scal$time_sec = period_to_seconds(hms(do.call(rbind, lapply(backbone_scal$time, reformat_hms))))
+backbone_scal$size = c(500,1000,5000,10000,50000,500,1000,5000,10000,50000)
+p_tmp = backbone_scal[,c(2,5,4,6,1)]
+colnames(p_tmp)[5] = 'soft'
+
+
 p_tab = rbind(scal_raw,scal_fast)
-p<-ggplot(p_tab,aes(x=size,y=time_sec,col=soft,group=soft))+geom_line()+geom_point()+rect_temp+ylab("Seconds")+xlab("Number of cells")+scale_color_manual(NULL,values=basecol(2))
+p_tab = rbind(p_tab,p_tmp)
+
+
+p<-ggplot(p_tab,aes(x=size,y=time_sec,col=soft,group=soft))+geom_line()+geom_point()+rect_temp+ylab("Running time")+xlab("Number of cells")+scale_color_manual(NULL,values=basecol(4))+
+  scale_y_log10(breaks = c( 60, 3600,86400),
+                labels = c( "1 min", "1 h", "24 h"),
+                limits = c(20,110000) 
+                ) +
+  scale_x_log10(breaks = c(500, 1000, 5000, 10000, 50000)
+                )
+
+
 ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/running_time.pdf",height=4,width=6)
 
 p_tab$peak_memory_gb = p_tab$peak_memory_mb/1024
-p<-ggplot(p_tab,aes(x=size,y=peak_memory_gb,col=soft,group=soft))+geom_line()+geom_point()+rect_temp+ylab("Peak memory (GB)")+xlab("Number of cells")+scale_color_manual(NULL,values=basecol(2))
+p<-ggplot(p_tab,aes(x=size,y=peak_memory_gb,col=soft,group=soft))+geom_line()+geom_point()+rect_temp+ylab("Peak memory (GB)")+xlab("Number of cells")+scale_color_manual(NULL,values=basecol(4))+
+  scale_y_log10(breaks = c(10, 100, 500),
+                labels = c( "10 GB", "100 GB", "500 GB"),
+                limits = c(3,500)
+  ) +
+  scale_x_log10(breaks = c(500, 1000, 5000, 10000, 50000)
+  )
+p
 ggsave(p,filename="/home/shaliu_fu/multireg/cellGRN/eval/results/peak_memory.pdf",height=4,width=6)
 ```
 

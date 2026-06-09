@@ -7,7 +7,7 @@ CellGRN is a framework that shifts the paradigm from global fitting to cell-spec
 
 CellGRN-sparse is an accelerated version of CellGRN, which skipped the step of cell-specific GRN output and optimized with sparse matrix and block computation.
 
-All datasets can be downloaded from [FigShare](10.6084/m9.figshare.31304758) or baidu Net Dist(https://pan.baidu.com/s/1mkpBOzyyuOHvmTPC4sMGBg?pwd=4r8v)
+All datasets can be downloaded from [FigShare](https://doi.org/10.6084/m9.figshare.31304758) or baidu Net Dist(https://pan.baidu.com/s/1mkpBOzyyuOHvmTPC4sMGBg?pwd=4r8v)
 
 ### Overview of CellGRN and CellGRN-sparse
 ----------------------------
@@ -32,7 +32,7 @@ conda activate cellgrn
 
 2. Install cellgrn package.
 ```Bash
-git clone https://github.com/xxx/cellgrn
+git clone https://github.com/DELTA-TJ-submission/CellGRN
 # set dir to folder
 cd cellgrn
 pip install .
@@ -41,13 +41,16 @@ pip install .
 ```python
 import cellgrn
 ```
+The installation typically take few minutes.
+
 ### Tutorial
 A demo code for CellGRN and CellGRN-sparse [tutorial](./tutorial.ipynb)
 
 ### Repository structure
 - [code/grn_method](code/grn_method/): SCENIC+ and LINGER script.
 - [code/preprocess](code/preprocess/): Preprocessing scripts for input datasets and validation datasets.
-- [code/***_run.ipynb](code/): Demo code to run CellGRN in multiome/spatial-multiome datasets in our manuscript.
+- [code/***_run.ipynb](code/): Demo code to run CellGRN in multiome/spatial-multiome datasets in our manuscript. 
+- [code/scalability_run.ipynb](code/scalability_run.ipynb): Running time and memory assessment for different dataset sizes. 
 - [eval/***_eval.ipynb](eval/): Benchmark pipelines for each dataset.
 - [eval/visualization/](eval/visualization/): R  scripts to plot figure in our manuscript.
 
