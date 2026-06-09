@@ -50,8 +50,8 @@ A demo code for CellGRN and CellGRN-sparse [tutorial](./tutorial.ipynb)
 - [code/grn_method](code/grn_method/): SCENIC+ and LINGER script.
 - [code/preprocess](code/preprocess/): Preprocessing scripts for input datasets and validation datasets.
 - [code/***_run.ipynb](code/): Demo code to run CellGRN in multiome/spatial-multiome datasets in our manuscript. 
-- [code/melanoma_run.ipynb](code/melanoma_run.ipynb): A step-by-step demo for CellGRN on a small dataset.
-- [code/scalability_run.ipynb](code/scalability_run.ipynb): Code for running time and memory assessment for different dataset sizes for CellGRN and CellGRN-sparse.
+    - [code/melanoma_run.ipynb](code/melanoma_run.ipynb): A step-by-step demo for CellGRN on a small dataset.
+    - [code/scalability_run.ipynb](code/scalability_run.ipynb): Code for running time and memory assessment for different dataset sizes for CellGRN and CellGRN-sparse.
 - [eval/***_eval.ipynb](eval/): Benchmark pipelines for each dataset.
 - [eval/visualization/](eval/visualization/): R  scripts to plot figure in our manuscript.
 
