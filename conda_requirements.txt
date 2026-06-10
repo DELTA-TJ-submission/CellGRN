@@ -17,7 +17,6 @@ beautifulsoup4=4.14.3=pypi_0
 bleach=6.3.0=pypi_0
 bzip2=1.0.8=h5eee18b_6
 ca-certificates=2025.12.2=h06a4308_0
-cellgrn=0.0.0=pypi_0
 certifi=2026.1.4=pypi_0
 cffi=2.0.0=pypi_0
 charset-normalizer=3.4.4=pypi_0

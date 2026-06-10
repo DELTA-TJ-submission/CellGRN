@@ -6,7 +6,7 @@ import anndata as ad
 from scipy import sparse
 
 
-def normalzie_rna(gene_expr, temperature=0.1,rna_thres=0.5):
+def normalize_rna(gene_expr, temperature=0.1, rna_thres=0.5):
 
     if temperature <= 0:
         raise ValueError("temperature must be positive")
@@ -27,7 +27,7 @@ def normalzie_rna(gene_expr, temperature=0.1,rna_thres=0.5):
     return gene_scaled, gene_scaled2
 
 
-def normalzie_rna_sparse(gene_expr_sparse, temperature=0.1, rna_thres=0.5):
+def normalize_rna_sparse(gene_expr_sparse, temperature=0.1, rna_thres=0.5):
 
     if temperature <= 0:
         raise ValueError("temperature must be positive")
@@ -45,6 +45,15 @@ def normalzie_rna_sparse(gene_expr_sparse, temperature=0.1, rna_thres=0.5):
     gene_scaled2_array = 1.0 / (1.0 + np.exp(-sig_input_fixed))
 
     return gene_scaled_sparse, gene_scaled2_array
+
+
+# Backward-compatible aliases for the previous misspelled API names.
+def normalzie_rna(gene_expr, temperature=0.1, rna_thres=0.5):
+    return normalize_rna(gene_expr, temperature=temperature, rna_thres=rna_thres)
+
+
+def normalzie_rna_sparse(gene_expr_sparse, temperature=0.1, rna_thres=0.5):
+    return normalize_rna_sparse(gene_expr_sparse, temperature=temperature, rna_thres=rna_thres)
 
 
 def parse_edges(cand_df, tf_list, gene_list, peak_list):
@@ -98,7 +107,6 @@ def compute_cell_grn_scores(cell_id, tf_df, rna_df, atac_df, edges):
     tf_values = tf_df.loc[cell_id]
     gene_values = rna_df.loc[cell_id]
     peak_values = atac_df.loc[cell_id]
-    
     scores = {}
 
     for tf, gene in edges['tf_gene']:
@@ -519,9 +527,9 @@ def calc_cellgrn_top_target_score(df_grn, cand_df, gene_list, sample_grn_res,
         sel_df2 = sel_df[sel_names2].sum(axis=1)
         out_df = pd.concat([out_df,sel_df2],axis=1)
     out_df.columns = gene_list
-    return out_df 
+    return out_df
 
-def calc_cellgrn_top_target_connectivity(df_grn, cand_df, gene_list, 
+def calc_cellgrn_top_target_connectivity(df_grn, cand_df, gene_list,
                                 col_name='TF', rank=5000):
     out_df = pd.DataFrame()
     for test_tf in gene_list:
@@ -533,6 +541,4 @@ def calc_cellgrn_top_target_connectivity(df_grn, cand_df, gene_list,
         sel_df2 = ((sel_df > 0) & (selected_ranks <= rank)).sum(axis=1)
         out_df = pd.concat([out_df,sel_df2],axis=1)
     out_df.columns = gene_list
-    return out_df 
-
-    
+    return out_df

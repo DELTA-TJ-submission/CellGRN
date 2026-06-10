@@ -25,8 +25,16 @@ setup(
     keywords="cellgrn",
     name="cellgrn",
     packages=find_packages(),
-
+    install_requires=[
+        "anndata",
+        "numpy",
+        "pandas",
+        "pyranges",
+        "scanpy",
+        "scikit-learn",
+        "scipy",
+        "umap-learn",
+    ],
     version="0.0.0",
     zip_safe=False,
 )
-
