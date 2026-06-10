@@ -63,15 +63,13 @@ The GRN backbone input should be a CSV file with three required columns:
 
 For `TF-Gene` rows, `feature1` is a TF and `feature2` is a gene. For `TF-Peak` rows, `feature1` is a TF and `feature2` is a peak. For `Peak-Gene` rows, `feature1` is a peak and `feature2` is a gene.
 
-The formatted output CSV files use these columns:
+A example output (TF-Gene result) is as follows:
 
-| Output file type | Columns | Description |
+| TF | Gene | Score |
 | --- | --- | --- |
-| `tf_gene_*` | `TF`, `Gene`, `Score`, optional `cell_type` | TF-gene regulatory score |
-| `tf_peak_*` | `TF`, `Peak`, `Score`, optional `cell_type` | TF-peak regulatory score |
-| `gene_peak_*` | `Gene`, `Peak`, `Score`, optional `cell_type` | Peak-gene regulatory score |
+| NFKB1 | IL6 | 100 |
+| NFKB1 | IL8 | 99 |
 
-Files with `sample` in the name are sample-wise outputs and do not include `cell_type`; files with `celltype` in the name include `cell_type`. `format_sample_grn` returns the top-ranked edges by default, not the full edge list: top 10,000 TF-gene edges, top 20,000 TF-peak edges, and top 20,000 peak-gene edges. CellGRN-sparse outputs sample-wise and cell-type-wise GRNs only; it does not output cell-specific GRN matrices.
 
 ### Tutorial
 Two complementary examples are provided:
